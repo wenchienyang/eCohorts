@@ -6,7 +6,16 @@
 	This file creates derived variables for analysis from the MNH ECohorts India dataset. 
 */
 
-u "$in_data_final/eco_m1_in.dta", clear
+
+/*******************************************************************************
+* Change log
+* 				Updated
+*				version
+* Date 			number 	Name			What Changed
+* 2024-09-17	1.01	MK Trimner		Commented out the file to use and saving command so that it can be called by the latest module
+********************************************************************************/
+
+*u "$in_data_final/eco_m1_in.dta", clear
 
 *------------------------------------------------------------------------------*
 * MODULE 1
@@ -99,7 +108,8 @@ u "$in_data_final/eco_m1_in.dta", clear
 			gen anc1calcium = m1_713b
 			recode anc1calcium (2=1) (3=0)
 			gen anc1deworm= m1_713d
-			recode anc1deworm (2=1) (3=0)
+			recode anc1deworm (2=1) (3=0) 
+			replace anc1deworm =. if m1_804 ==1
 			recode m1_715 (2=1), gen(anc1itn)
 			gen anc1depression = m1_716c
 			gen anc1malaria_proph =  m1_713e
@@ -239,8 +249,9 @@ u "$in_data_final/eco_m1_in.dta", clear
 			recode Hb 0/10.9999=1 11/20=0, g(anemic)
 			
 			* BMI 
-			gen height_m = height_cm/100 // need to fix height values under 10cm!!!
-			replace height_m=. if height_m<1
+			recode height_cm 41.5=141 112=155 93=144  4.5=137.2 4.6=140.21 5.2=158.5 ///
+			5.3=161.5 5.5=167.64 5.6=170.69 6.1=185.93 6.2=188.98
+			gen height_m = height_cm/100 
 			gen BMI = weight_kg / (height_m^2)
 			gen low_BMI= 1 if BMI<18.5 
 			replace low_BMI = 0 if BMI>=18.5 & BMI<.
@@ -268,7 +279,7 @@ u "$in_data_final/eco_m1_in.dta", clear
 			lab var anc1edd "Estimated due date told by provider at 1st ANC visit"
 			lab var anc1ux "User experience at 1st ANC visit"
 			lab var anc1tq "Content of 1st ANC visit - total quality"
-			lab var anc1counsel "Counseling of 1at ANC visit"
+			lab var anc1counsel "Counseling score at 1st ANC visit"
 			lab var anc1food_supp "Food supplement given at 1t ANC visit" 
 			lab var anc1mental_health_drug "Mental health drug given at 1st ANC visit"
 			lab var anc1hypertension "Medicines for hypertension given at 1st ANC visit"
@@ -298,9 +309,7 @@ u "$in_data_final/eco_m1_in.dta", clear
 			lab var med_vax_cost "The amount of money spent for medicine/vaccines"
 			lab var labtest_cost "The amounr of money spent on Test/investigations (x-ray, lab etc.)"
 			lab var indirect_cost "Indirect cost, including transport, accommodation, and other"
-			lab var counsel_comeback "Counselled about coming back for ANC visit"
-			lab var SYSTOLIC "Systolic pressure at 1st ANC"
-			lab var DIASTOLIC "Diastolic pressure at 1st ANC"
+			lab var counsel_comeback "Counselled about coming back for additional ANC visit"
 			lab var Date_of_interview "Date of interview"
 			lab var DATE_OF_INTERVIEW "Date of interview"
 			lab var estimated_delivery_date "Estimated delivery date"
@@ -314,4 +323,4 @@ u "$in_data_final/eco_m1_in.dta", clear
 * HEM: this might be hemoglobin, not sure if it's the Hb taken during 1st ANC (another var Hb refering to Hb level from maternal card) (not labeled yet)
 * study_id CALC_END_TIME REVIEW_CORRECTIONS REVIEW_COMMENTS REVIEW_QUALITY: not sure about these variables (not labeled yet)
 						
-			save "$in_data_final/eco_m1_in_der.dta", replace
+		*	save "$in_data_final/eco_m1_in_der.dta", replace

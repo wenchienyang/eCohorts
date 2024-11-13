@@ -1,30 +1,35 @@
 * India MNH ECohort Data Cleaning File 
 * Created by S. Sabwa
-* Last Updated: Jan 22 2024 
+* Last Updated: 2024-08-08
 *------------------------------------------------------------------------------*
+/*******************************************************************************
+* Change log
+* 				Updated
+*				version
+* Date 			number 	Name			What Changed
+2024-08-08		1.01	MK Trimner		Corrected respondent id "202310031133022010 to remove the " i the first char so it will merge with M2
+* 2024-10-30	1.02	MK Trimner		Added chars with module									
+*******************************************************************************/
 
 * Import Data 
 clear all 
-
-u "$in_data/Module1_02_04_2024", clear
-*u "$in_data/Module_1.dta", clear 
-*use "$in_data/Archive/Module_1_Baseline_Data.dta", clear
-
+u "$in_data/Module1_07_06_2024.dta", clear
 *------------------------------------------------------------------------------*
-/* Adjusting unique facility names
-drop a5
-merge 1:1 q103 using "$in_data/Archive/facility_29_02_24.dta"
-drop _merge 
-order a5, after(a4)*/
-
-
 * Dataset was originally sent in upper cap
 foreach var of varlist _all  {
   rename `var' `=strupper("`var'")'
+  
 }
 
-* Dropping duplicate IDs (data collection problems identified in March 2024)
+/* Dropping duplicate IDs (data collection problems identified in March 2024)
 drop if Q103=="202311171131039696" | Q103=="202312151215032417" | Q103=="202312201759032417" | Q103=="202312201818032417" | Q103=="202401171049032417" | Q103=="202401311139032417" | Q103=="202402051039032417" | Q103=="202402051053032417" | Q103=="202402051720032417" | Q103=="202402061130032417" | Q103=="202402061524032417" | Q103=="202402071437032417"
+* Additional data collection errors (May 2024)
+drop if Q103=="202311171214039696" | Q103=="202311181057030996" | Q103=="202311181034030996" | Q103=="202311191400030996" | Q103=="202312131845039696" | Q103=="202311201524039696" ///
+ | Q103=="202311201424039696" | | Q103=="202311212018039696" | Q103=="202312151316032417" | Q103=="202312201604032417" | Q103=="202401171411031017" |  Q103=="202401301408031017" | Q103=="202402012204032417"  ///
+| Q103=="202401311531032417" | Q103=="202401311420032417" | Q103=="202402041307032417" | Q103=="202402042214032417" | Q103=="202402021142032417" | Q103=="202402051740032417" | ///
+Q103=="202402051137032417" | Q103=="202402051749032417" | Q103=="202402051148032417" | Q103=="202402061028032417" | Q103=="202402061341032417" | Q103=="202402061405032417" | Q103=="202402061257032417" ///
+| Q103=="202402061443032417" | Q103=="202402061109032417" | Q103=="202402071322032417" | Q103=="202402071303032417" | Q103=="202402071224032417"*/
+ 
 
 gen country = "India"
 *===============================================================================
@@ -457,9 +462,6 @@ recode m1_1308 (.  = .a) if m1_1306 == 1 | m1_1306 == .a | m1_1306 == .d | m1_13
 
 recode m1_1309 (.  = .a) if m1_1308 !=1		
 
-
-
-	
 *===============================================================================					   
 	
 	* STEP FOUR: LABELING VARIABLES
@@ -866,6 +868,15 @@ order phq9a phq9b phq9c phq9d phq9e phq9f phq9g phq9h phq9i, after(m1_205e)
 *===============================================================================
 	* STEP SIX: SAVE DATA TO RECODED FOLDER
 
+	* We need to trim the respondentid variables and strip any "
+	replace respondentid = subinstr(respondentid,`"""',"",.)
+	replace respondentid = trim(respondentid)
+	
+	* Add a character with the module number for codebook purposes
+	foreach v of varlist * {
+		char `v'[Module] 1
+	}
+	
 	save "$in_data_final/eco_m1_in.dta", replace
 
 *===============================================================================

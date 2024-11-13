@@ -1,7 +1,11 @@
+
+
+*------------------------------------------------------------------------------*
+* DESCRIPTIVE TABLES
+*------------------------------------------------------------------------------*
 * ETHIOPIA
 u "$user/$analysis/ETtmp.dta", clear
 cd "$user/$analysis"
-
 global qualvarsET anc1bp anc1weight anc1height anc1muac anc1blood ///
 		anc1urine ultrasound anc1lmp anc1depression anc1danger_screen previous_preg ///
 		m1_counsel_nutri m1_counsel_exer m1_counsel_complic m1_counsel_birthplan edd ///
@@ -10,16 +14,16 @@ global qualvarsET anc1bp anc1weight anc1height anc1muac anc1blood ///
 	* Supp Table 1. ANC1 quality
 		tabstat  $qualvarsET if site==2, stat(mean count) col(stat) // East Shewa
 		tabstat  $qualvarsET if site==1, stat(mean count) col(stat) // Adama
-		tabstat anc1qual, by(site) stat(mean sd )
+		tabstat anc1qual, by(site) stat(mean sd)
 		
 	* Table 1 Demog & health 		
 		summtab , contvars(enrollage ) catvars(second healthlit_corr young tertile marriedp ///
-		poorhealth depress  m1_dangersigns primipara preg_intent trimester) mean by(site) excel ///
+		poorhealth depress  m1_dangersigns primipara preg_intent trimester total_risk) mean by(site) excel ///
 		excelname(Table1) sheetname(ETH_demog) replace 
 		
 	* Fig 1 risk factors		
 		tabstat m1_anemic_11 chronic maln_underw overweight complic anyrisk, stat(mean count) col(stat)
-
+		
 	* Table 3 Facility characteristics
 		summtab if tag==1, catvars(private facsecond ) contvars (sri_score total_staff ///
 		anc_mont beds) mean by(site) excel excelname(suppTable4) sheetname(ET) replace 
@@ -44,7 +48,7 @@ global qualvarsKE anc1bp anc1weight anc1height anc1muac anc1blood ///
 	
 	* Table 1 Demog & health 		
 		summtab , contvars(enrollage) catvars(second healthlit_corr young tertile marriedp ///
-		poorhealth depress  m1_dangersigns primipara preg_intent trimester) mean by(site) excel ///
+		poorhealth depress  m1_dangersigns primipara preg_intent trimester total_risk) mean by(site) excel ///
 		excelname(Table1) sheetname(KEN_demog) replace 
 		
 	* Fig 1 risk factors		
@@ -76,7 +80,7 @@ global qualvarsZA anc1bp anc1weight anc1height anc1muac anc1blood ///
 		
 	* Table 1 Demog & health 		
 		summtab , contvars(enrollage) catvars(second healthlit_corr young tertile marriedp ///
-		poorhealth depress m1_dangersigns primipara preg_intent trimester) mean by(site) excel ///
+		poorhealth depress m1_dangersigns primipara preg_intent trimester total_risk) mean by(site) excel ///
 		excelname(Table1) sheetname(ZAF_demog) replace 
 		
 	* Fig 1 risk factors		
@@ -95,6 +99,7 @@ global qualvarsZA anc1bp anc1weight anc1height anc1muac anc1blood ///
 * INDIA	
 u "$user/$analysis/INtmp.dta", clear 
 cd "$user/$analysis"
+
 global qualvarsIND anc1bp anc1weight anc1blood ///
 		anc1urine ultra anc1lmp  previous_preg counsel_nutri  counsel_complic counsel_birthplan edd ///
 		counsel_comeback anc1ifa calcium anc1deworm tt
@@ -106,7 +111,7 @@ global qualvarsIND anc1bp anc1weight anc1blood ///
 		
 		* Table 1 Demog & health 		
 		summtab , contvars(enrollage) catvars(second healthlit_corr young tertile marriedp ///
-		poorhealth depress  m1_dangersigns primipara preg_intent trimester) mean by(urban) excel ///
+		poorhealth depress  m1_dangersigns primipara preg_intent trimester total_risk) mean by(urban) excel ///
 		excelname(Table1) sheetname(IND_demog) replace 
 		
 		* Fig 1 risk factors		

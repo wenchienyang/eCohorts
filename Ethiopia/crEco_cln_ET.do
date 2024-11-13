@@ -11,7 +11,25 @@
 		* STEP FIVE: ORDER VARIABLES
 		* STEP SIX: SPLIT, RESHARE M2 AND MERGE TO OBTAIN A WIDE DATASET
 		* STEP SEVEN: SAVE DATA
+		* STEP EIGHT: RUN DERIVED VARIABLE DO FILE AND SAVE AS eco_ET_Complete
 *------------------------------------------------------------------------------*
+
+*------------------------------------------------------------------------------*
+/*******************************************************************************
+* Change log
+* 				Updated
+*				version
+* Date 			number 	Name			What Changed
+2024-10-02		1.01	MK Trimner		Reordered M3 variables to align with instrument
+*										Added call to derived variable program at the end of the program
+*										Saved as ec_ET_COMPLETE dataset
+*										confirmed that all date variables are in a date format and not string
+*										Added code to format all dates in proper format and to add special missing values per the questionnaire for values of 888,999 and 998
+* 										Added char to all variables to show the original variable in a note
+* 2024-10-08	1.02	MK Trimner		Added char that contains the module for each original variable for codebook purposes		
+*										Corrected typo for value label m2_203h, m2_205c, m2_interview_restarted, breathing, m3_YNDKRF, m4_conclusion_dead_baby and m5_feeding
+* 2024-10-30	1.03	MK Trimner		Renaming variable to alsign with all other countries m1_203_et - removed the _et as it applies to other countries as well
+*******************************************************************************/
 * Import Data 
 clear all 
 
@@ -19,6 +37,13 @@ clear all
 *import delimited using "$et_data/05Jan2024.csv", clear
 import delimited using "$et_data/2024-03-15.csv", clear
 gen country = "Ethiopia"
+
+* Add a character with the original country specific var name
+foreach v of varlist * {
+	local name `v'
+	char `v'[Original_ET_Varname] `name'
+}
+
 *---------------------		
 ** Carryforward command: 
 
@@ -37,10 +62,11 @@ gen country = "Ethiopia"
 		replace order_redcap = 11 if redcap_event_name == "module_4_arm_1"
 		replace order_redcap = 12 if redcap_event_name == "module_5_arm_1"
 		sort record_id order_redcap
+		char order_redcap[Original_ET_Varname] `redcap_event_name[Original_ET_Varname]'
 	
 		
 		*2) Add any new vars here:
-		by record_id: carryforward hiv_status_109_m2 what_was_the_result_of_hiv module_1_baseline_face_to_face_e ///
+		by record_id: carryforward study_id hiv_status_109_m2 what_was_the_result_of_hiv module_1_baseline_face_to_face_e ///
 								   how_many_babies_do_you_303a is_the_respondent_eligible ///
 								   module_1_baseline_face_to_face_e date_of_interview_m1, replace
 
@@ -70,9 +96,6 @@ drop if module_1_baseline_face_to_face_e == 0
 *drop m2_complete (not useful) and drop call tracking questions/module (also not useful) - 1/24
 drop m2_attempt_avail m2_attempt_bestnumber m2_attempt_contact m2_attempt_date m2_attempt_goodtime m2_attempt_other m2_attempt_outcome m3_attempt_outcome m3_attempt_outcome_p2 m3_attempt_date m3_attempt_outcome2 module_2_phone_surveys_prenatal_
 
-*** Dropping M5 for cleaning purposes:
-drop ic_may_i_proceed_with_the-module_5_end_line_facetoface_sur	
-
 		
 *------------------------------------------------------------------------------*
 
@@ -81,8 +104,11 @@ drop ic_may_i_proceed_with_the-module_5_end_line_facetoface_sur
 	* MODULE 1:
 	
 	rename record_id redcap_record_id
-	rename (study_id interviewer_id date_of_interview_m1 time_of_interview_m1) ///
-	       (study_id interviewer_id m1_date m1_start_time)
+	rename (interviewer_id date_of_interview_m1 time_of_interview_m1) ///
+	       (interviewer_id m1_date m1_start_time)
+	
+	tostring(study_id), gen(respondentid)	   
+		   
 	rename study_site_a4 study_site
 	rename other_study_site_a4 study_site_sd
 	rename facility_name_a5 facility
@@ -99,7 +125,7 @@ drop ic_may_i_proceed_with_the-module_5_end_line_facetoface_sur
 	rename is_the_respondent_eligible b7eligible
 	rename what_is_your_first_name_101 first_name
 	rename what_is_your_family_name_102 family_name
-	rename assign_respondent_id_103 respondentid
+	rename assign_respondent_id_103 id_et
 	rename do_you_have_a_mobile_phone mobile_phone
 	rename what_is_your_phone_number phone_number
 	rename can_i_flash_this_mobile_num flash
@@ -328,17 +354,17 @@ drop ic_may_i_proceed_with_the-module_5_end_line_facetoface_sur
 	rename (m2_314_reason___1 m2_314_reason___2 m2_314_reason___3 m2_314_reason___4 ///
 	m2_314_reason___5 m2_314_reason___96 m2_314_reason___998 m2_314_reason___999 ///
 	m2_314_reason___888) (m2_316_1 m2_316_2 m2_316_3 m2_316_4 m2_316_5 m2_316_96 ///
-	m2_314_998_et  m2_314_999_et m2_314_888_et)
+	m2_316_998_et  m2_316_999_et m2_316_888_et)
 	
 		rename (m2_317_reason___1 m2_317_reason___2 m2_317_reason___3 m2_317_reason___4 ///
 	m2_317_reason___5 m2_317_reason___96 m2_317_reason___998 m2_317_reason___999 ///
-	m2_317_reason___888) (m2_317_1 m2_317_2 m2_317_3 m2_317_4 m2_317_5 m2_317_96 ///
-	m2_317_998_et  m2_317_999_et m2_317_888_et)
+	m2_317_reason___888) (m2_319_1 m2_319_2 m2_319_3 m2_319_4 m2_319_5 m2_319_96 ///
+	m2_319_998_et  m2_319_999_et m2_319_888_et)
 	
 	rename (m2_320___0 m2_320___1 m2_320___2 m2_320___3 m2_320___4 m2_320___5 m2_320___6 m2_320___7 ///
 			m2_320___8 m2_320___9 m2_320___10 m2_320___11 m2_320___96 m2_320___99 m2_320___998 ///
-			m2_320___999 m2_320___888) (m2_320_a m2_320_b m2_320_c m2_320_d m2_320_e m2_320_f ///
-			m2_320_g m2_320_h m2_320_i m2_320_j m2_320_k m2_320_l m2_320_96 m2_320_99 m2_320_998_et ///
+			m2_320___999 m2_320___888) (m2_320_0 m2_320_1 m2_320_2 m2_320_3 m2_320_4 m2_320_5 ///
+			m2_320_6 m2_320_7 m2_320_8 m2_320_9 m2_320_10 m2_320_11 m2_320_96 m2_320_99 m2_320_998_et ///
 			m2_320_999_et m2_320_888_et)
 
 	rename (quality_rate_of_care_1st_consult quality_rate_of_care_2nd_consult quality_rate_of_care_3rd_consult quality_rate_of_care_4th_consult quality_rate_of_care_5th_consult) (m2_401 m2_402 m2_403 m2_404 m2_405)
@@ -353,21 +379,35 @@ drop ic_may_i_proceed_with_the-module_5_end_line_facetoface_sur
 	rename (since_you_last_discuss_sign_506a since_you_last_care_newborn_506c since_you_last_family_plan_506d ///
 			session_of_psychological_508 do_you_know_the_number_session_o how_many_of_these_sessio_508b ///
 			do_you_know_how_long_visit_508c how_many_minutes_did_this_508c)(m2_506a m2_506c m2_506d m2_508a ///
-			m2_508b_number m2_508b_last m2_508c m2_508d)
+			m2_508b_yn m2_508b_num m2_508c_yn m2_508c_time)
 	
 	rename (a_since_we_last_spoke_did_509a since_we_last_spoke_did_509b since_we_last_spoke_did_509c since_we_last_spoke_did_601a since_we_last_spoke_did_601b since_we_last_spoke_did_601c since_we_last_spoke_did_601d since_we_last_spoke_did_601e since_we_last_spoke_did_601f since_we_last_spoke_did_601g since_we_last_spoke_did_601h since_we_last_spoke_did_601i since_we_last_spoke_did_601j since_we_last_spoke_did_601k since_we_last_spoke_did_601l since_we_last_spoke_did_601m since_we_last_spoke_did_601n specify_other_medicine_sup)(m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_601n_other)
 	
 	rename (how_much_paid_602 in_total_how_much_did_you_602 are_you_currently_taking_603 how_often_do_you_take_604 i_would_now_like_to_ask_ab_701)(m2_602a m2_602b m2_603 m2_604 m2_701)
 	
-	rename (have_you_spent_money_702a how_much_money_did_you_702a have_you_spent_money_702b how_much_money_did_you_702b have_you_spent_money_702c how_much_money_did_you_702c have_you_spent_money_702d how_much_money_did_you_702d have_you_spent_money_702e how_much_money_did_you_702e so_in_total_you_spent_703 you_know_how_much_704 so_how_much_in_total_would_704)(m2_702a m2_702a_other m2_702b m2_702b_other m2_702c m2_702c_other m2_702d m2_702d_other m2_702e m2_702e_other m2_703 m2_704 m2_704_other)
+	rename have_you_spent_money_702a m2_702a
+	rename how_much_money_did_you_702a m2_702a_cost
+	rename have_you_spent_money_702b m2_702b
+	rename how_much_money_did_you_702b m2_702b_cost
+	rename have_you_spent_money_702c m2_702c
+	rename how_much_money_did_you_702c m2_702c_cost
+	rename have_you_spent_money_702d m2_702d
+	rename how_much_money_did_you_702d m2_702d_cost
+	rename have_you_spent_money_702e m2_702e
+	rename how_much_money_did_you_702e m2_702e_cost
+	rename so_in_total_you_spent_703 m2_703
+	rename you_know_how_much_704 m2_704
+	rename so_how_much_in_total_would_70 m2_704_confirm
 	
-	rename (m2_705___1 m2_705___2 m2_705___3 m2_705___4 m2_705___5 m2_705___6 m2_705___96 m2_705___998 m2_705___999 m2_705___888) (m2_705_1 m2_705_2 m2_705_3 m2_705_4 m2_705_5 m2_705_6 m2_705_96 m2_705_998_et m2_705_999_et m2_705_888_et)
+	rename (m2_705___1 m2_705___2 m2_705___3 m2_705___4 m2_705___5 m2_705___6 m2_705___96 m2_705___998 m2_705___999 m2_705___888) ///
+		   (m2_705_1 m2_705_2 m2_705_3 m2_705_4 m2_705_5 m2_705_6 m2_705_96 m2_705_998_et m2_705_999_et m2_705_888_et)
 	
 	rename (specify_other_income_sourc m2_time_it_is_interru at_what_time_it_is_restart time_of_interview_end_103b total_duration_of_interv_103c)(m2_705_other m2_interupt_time m2_restart_time m2_endtime m2_int_duration)
 	
 	
 	
 * MODULE 3:
+
 
 rename (iic_3 cr1_permission_granted_3 date_of_interview_m3 time_of_interview_started_3 m3_birth_or_ended m3_ga1 ga_birth_mat_estimated) ///
 	   (m3_start_p1 m3_permission m3_date m3_time m3_birth_or_ended m3_ga1 m3_ga2)
@@ -384,7 +424,11 @@ rename (do_you_know_weight_1st_baby do_you_know_weight_2nd_baby do_you_know_weig
 		how_confiden_on_breastfeed how_often_per_day_in_eth1_3 born_alive_baby_1 as_you_know_this_survey_202 born_alive_baby_2 born_alive_baby_3 ///
 		q313b_1 q313b_2) (m3_baby1_size m3_baby2_size m3_baby3_size m3_baby1_health m3_baby2_health m3_baby3_health m3_baby1_feed_other ///
 	    m3_baby2_feed_other m3_baby3_feed_other m3_breastfeeding m3_breastfeeding_fx_et m3_baby1_born_alive m3_202 ///
-		m3_baby2_born_alive m3_baby3_born_alive m3_313a_baby1 m3_313b_baby1)		
+		m3_baby2_born_alive m3_baby3_born_alive m3_313a_baby1 m3_313b_baby1)	
+		
+replace m3_313a_baby1 = "2023-08-11" if respondentid == "121515"
+replace m3_313a_baby1 = "2023-06-19" if respondentid == "180813"
+replace m3_313a_baby1 = "2023-11-26" if redcap_record_id == "1708-36"
 		
 rename (how_you_feed_1st_baby___1 how_you_feed_1st_baby___2 how_you_feed_1st_baby___3 how_you_feed_1st_baby___4 how_you_feed_1st_baby___5 ///
 		how_you_feed_1st_baby___6 how_you_feed_1st_baby___7 how_you_feed_1st_baby___96 how_you_feed_1st_baby___99 how_you_feed_1st_baby___998 ///
@@ -568,15 +612,16 @@ rename (overall_taking_everything_901 how_likely_are_you_to_reco_902 did_staff_s
 rename (ask_permission_viginal_exa_1006b were_vaginal_examination_1006c any_form_of_pain_relief_1007a did_you_request_pain_rel_1007b did_you_receive_pain_rel_1007c ///
 		would_like_to_ask_you_1101 spend_money_on_reg_1102 how_much_spent_registra did_you_spend_money_on_med how_you_spent_on_medicin did_you_spend_money_on_test ///
 		how_much_spend_on_test did_you_spend_money_on_transp how_much_spend_on_transp did_you_spend_on_food_an how_much_spend_on_food did_you_spend_on_other ///
-		how_much_spend_on_other in_total_how_much_you_spen confirm_oop total_spent) (m3_1006b m3_1006c m3_1007a m3_1007b m3_1007c m3_1101 m3_1102a m3_1102a_amt ///
-		m3_1102b m3_1102b_amt m3_1102c m3_1102c_amt m3_1102d m3_1102d_amt m3_1102e m3_1102e_amt m3_1102f m3_1102f_amt m3_1103 m3_1103_confirm m3_1104)
+		how_much_spend_on_other in_total_how_much_you_spen confirm_oop total_spent) ///
+		(m3_1006b m3_1006c m3_1007a m3_1007b m3_1007c m3_1101 m3_1102a m3_1102a_amt ///
+		m3_1102b m3_1102b_amt m3_1102c m3_1102c_amt m3_1102d m3_1102d_amt m3_1102e m3_1102e_amt m3_1102f m3_1102f_amt m3_1103 m3_1103_confirm m3_1102_total)
 
 rename (which_of_the_following_fin_1105 other_income_source_1105 to_conclude_this_survey_1106 time_of_interview_ended_103b ///
 		c_total_duration_of_interv ot1 ot1_oth date_of_rescheduled_m3_p2 time_of_rescheduled_m3_p2) (m3_1105 ///
 		m3_1105_other m3_1106 m3_endtime m3_duration m3_p2_outcome m3_p2_outcome_other ///
 		m3_p2_date_of_rescheduled m3_p2_time_of_rescheduled)		
 
-		
+	
 * MODULE 4:
 rename iic_m4 m4_start 
 rename cr1_permission_granted_m4 m4_permission
@@ -829,60 +874,60 @@ rename other_outside_east_shew_2 m4_404b_other_2
 rename name_new_consult_3 m4_404c
 rename other_in_east_shewa404c m4_404c_other_1
 rename other_ourside_east_shew_3 m4_404c_other_2
-rename q405_pnc_visit1_m4 m4_405
+rename q405_pnc_visit1_m4 m4_405a
 
-rename q406_reason_visit1_m4___1 m4_406a
-rename q406_reason_visit1_m4___2 m4_406b
-rename q406_reason_visit1_m4___3 m4_406c
-rename q406_reason_visit1_m4___4 m4_406d
-rename q406_reason_visit1_m4___5 m4_406e
-rename q406_reason_visit1_m4___6 m4_406f
-rename q406_reason_visit1_m4___7 m4_406g
-rename q406_reason_visit1_m4___8 m4_406h
-rename q406_reason_visit1_m4___9 m4_406i
-rename q406_reason_visit1_m4___10 m4_406j
-rename q406_reason_visit1_m4___96 m4_406_96
-rename q406_reason_visit1_m4___998 m4_406_998
-rename q406_reason_visit1_m4___999 m4_406_999
-rename q406_reason_visit1_m4___888 m4_406_888
-rename q406_other_visit1_m4 m4_406_other
+rename q406_reason_visit1_m4___1 m4_405a_1
+rename q406_reason_visit1_m4___2 m4_405a_2
+rename q406_reason_visit1_m4___3 m4_405a_3
+rename q406_reason_visit1_m4___4 m4_405a_4
+rename q406_reason_visit1_m4___5 m4_405a_5
+rename q406_reason_visit1_m4___6 m4_405a_6
+rename q406_reason_visit1_m4___7 m4_405a_7
+rename q406_reason_visit1_m4___8 m4_405a_8
+rename q406_reason_visit1_m4___9 m4_405a_9
+rename q406_reason_visit1_m4___10 m4_405a_10
+rename q406_reason_visit1_m4___96 m4_405a_96
+rename q406_reason_visit1_m4___998 m4_405a_998
+rename q406_reason_visit1_m4___999 m4_405a_999
+rename q406_reason_visit1_m4___888 m4_405a_888
+rename q406_other_visit1_m4 m4_405a_other
 
-rename q407_pnc_visit2_m4 m4_407
+rename q407_pnc_visit2_m4 m4_405b
 
-rename q408_reason_visit2_m4___1 m4_408a
-rename q408_reason_visit2_m4___2 m4_408b
-rename q408_reason_visit2_m4___3 m4_408c
-rename q408_reason_visit2_m4___4 m4_408d
-rename q408_reason_visit2_m4___5 m4_408e
-rename q408_reason_visit2_m4___6 m4_408f
-rename q408_reason_visit2_m4___7 m4_408g
-rename q408_reason_visit2_m4___8 m4_408h
-rename q408_reason_visit2_m4___9 m4_408i
-rename q408_reason_visit2_m4___10 m4_408j
-rename q408_reason_visit2_m4___96 m4_408_96
-rename q408_reason_visit2_m4___998 m4_408_998
-rename q408_reason_visit2_m4___999 m4_408_999
-rename q408_reason_visit2_m4___888 m4_408_888
-rename q408_other_visit2_m4 m4_408_other
+rename q408_reason_visit2_m4___1 m4_405b_1
+rename q408_reason_visit2_m4___2 m4_405b_2
+rename q408_reason_visit2_m4___3 m4_405b_3
+rename q408_reason_visit2_m4___4 m4_405b_4
+rename q408_reason_visit2_m4___5 m4_405b_5
+rename q408_reason_visit2_m4___6 m4_405b_6
+rename q408_reason_visit2_m4___7 m4_405b_7
+rename q408_reason_visit2_m4___8 m4_405b_8
+rename q408_reason_visit2_m4___9 m4_405b_9
+rename q408_reason_visit2_m4___10 m4_405b_10
+rename q408_reason_visit2_m4___96 m4_405b_96
+rename q408_reason_visit2_m4___998 m4_405b_998
+rename q408_reason_visit2_m4___999 m4_405b_999
+rename q408_reason_visit2_m4___888 m4_405b_888
+rename q408_other_visit2_m4 m4_405b_other
 
-rename q409_pnc_visit3_m4 m4_409
+rename q409_pnc_visit3_m4 m4_405c
 
-rename q410_reason_visit3_m4___1 m4_410a
-rename q410_reason_visit3_m4___2 m4_410b
-rename q410_reason_visit3_m4___3 m4_410c
-rename q410_reason_visit3_m4___4 m4_410d
-rename q410_reason_visit3_m4___5 m4_410e
-rename q410_reason_visit3_m4___6 m4_410f
-rename q410_reason_visit3_m4___7 m4_410g
-rename q410_reason_visit3_m4___8 m4_410h
-rename q410_reason_visit3_m4___9 m4_410i
-rename q410_reason_visit3_m4___10 m4_410j
-rename q410_reason_visit3_m4___96 m4_410_96
-rename q410_reason_visit3_m4___998 m4_410_998
-rename q410_reason_visit3_m4___999 m4_410_999
-rename q410_reason_visit3_m4___888 m4_410_888
+rename q410_reason_visit3_m4___1 m4_405c_1
+rename q410_reason_visit3_m4___2 m4_405c_2
+rename q410_reason_visit3_m4___3 m4_405c_3
+rename q410_reason_visit3_m4___4 m4_405c_4
+rename q410_reason_visit3_m4___5 m4_405c_5
+rename q410_reason_visit3_m4___6 m4_405c_6
+rename q410_reason_visit3_m4___7 m4_405c_7
+rename q410_reason_visit3_m4___8 m4_405c_8
+rename q410_reason_visit3_m4___9 m4_405c_9
+rename q410_reason_visit3_m4___10 m4_405c_10
+rename q410_reason_visit3_m4___96 m4_405c_96
+rename q410_reason_visit3_m4___998 m4_405c_998
+rename q410_reason_visit3_m4___999 m4_405c_999
+rename q410_reason_visit3_m4___888 m4_405c_888
 
-rename q410_other_visit3_m4 m4_410_other
+rename q410_other_visit3_m4 m4_405c_other
 
 rename on_what_day_did_the_1st_ne m4_411a
 rename on_what_day_did_the_2nd_ne m4_411b
@@ -977,11 +1022,11 @@ rename what_healthcare_provide_603___4 m4_baby1_603e
 rename what_healthcare_provide_603___5 m4_baby1_603f
 rename what_healthcare_provide_603___6 m4_baby1_603g
 rename what_healthcare_provide_603___96 m4_baby1_603_96
-rename what_healthcare_provide_603___98 m4_603_1_98
-rename what_healthcare_provide_603___99 m4_603_1_99
-rename v1544 m4_603_1_998 
-rename v1545 m4_603_1_999 
-rename what_healthcare_provide_603___88 m4_603_1_888
+rename what_healthcare_provide_603___98 m4_baby1_603_98
+rename what_healthcare_provide_603___99 m4_baby1_603_99
+rename v1544 m4_baby1_603_998 
+rename v1545 m4_baby1_603_999 
+rename what_healthcare_provide_603___88 m4_baby1_603_888
 rename other_thing_provided m4_baby1_603_other
 
 rename m4_603b___0 m4_baby2_603a
@@ -992,11 +1037,11 @@ rename m4_603b___4 m4_baby2_603e
 rename m4_603b___5 m4_baby2_603f
 rename m4_603b___6 m4_baby2_603g
 rename m4_603b___96 m4_baby2_603_96
-rename m4_603b___98 m4_603_2_98
-rename m4_603b___99 m4_603_2_99
-rename m4_603b___998 m4_603_2_998
-rename m4_603b___999 m4_603_2_999 
-rename m4_603b___888 m4_603_2_888
+rename m4_603b___98 m4_baby2_603_98
+rename m4_603b___99 m4_baby2_603_99
+rename m4_603b___998 m4_baby2_603_998
+rename m4_603b___999 m4_baby2_603_999 
+rename m4_603b___888 m4_baby2_603_888
 rename other_thing_provided_2 m4_baby2_603_other
 
 rename m4_603c___0 m4_baby3_603a
@@ -1007,11 +1052,11 @@ rename m4_603c___4 m4_baby3_603e
 rename m4_603c___5 m4_baby3_603f
 rename m4_603c___6 m4_baby3_603g
 rename m4_603c___96 m4_baby3_603_96
-rename m4_603c___98 m4_603_3_98
-rename m4_603c___99 m4_603_3_99
-rename m4_603c___998 m4_603_3_998
-rename m4_603c___999 m4_603_3_999
-rename m4_603c___888 m4_603_3_888
+rename m4_603c___98 m4_baby3_603_98
+rename m4_603c___99 m4_baby3_603_99
+rename m4_603c___998 m4_baby3_603_998
+rename m4_603c___999 m4_baby3_603_999
+rename m4_603c___888 m4_baby3_603_888
 rename other_thing_provided_3 m4_baby3_603_other
 
 rename bp_measured_701a m4_701a
@@ -1093,46 +1138,46 @@ rename q802_baby1_hivmed_m4 m4_baby1_802i
 rename q802_baby2_hivmed_m4 m4_baby2_802i
 rename q802_baby3_hivmed_m4 m4_baby3_802i
 
-rename q802_othermed_baby1_m4 m4_802j_1
+rename q802_othermed_baby1_m4 m4_baby1_802j
 rename q803_othermedspec_baby1_m4 m4_baby1_802j_other
 
-rename q802_othermed_baby2_m4 m4_802j_2
+rename q802_othermed_baby2_m4 m4_baby2_802j
 rename q803_othermedspec_baby2_m4 m4_baby2_802j_other
 
-rename q802_othermed_baby3_m4 m4_802j_3
+rename q802_othermed_baby3_m4 m4_baby3_802j
 rename q803_othermedspec_baby3_m4 m4_baby3_802j_other
 
-rename q803_bcg_baby1_m4 m4_803a_1
-rename q803_bcg_baby2_m4 m4_803a_2
-rename q803_bcg_baby3_m4 m4_803a_3
+rename q803_bcg_baby1_m4 m4_baby1_803a
+rename q803_bcg_baby2_m4 m4_baby2_803a
+rename q803_bcg_baby3_m4 m4_baby3_803a
 
-rename q803_polio_baby1_m4 m4_803b_1
-rename q803_polio_baby2_m4 m4_803b_2
-rename q803_polio_baby3_m4 m4_803b_3
+rename q803_polio_baby1_m4 m4_baby1_803b
+rename q803_polio_baby2_m4 m4_baby2_803b
+rename q803_polio_baby3_m4 m4_baby3_803b
 
-rename q803_penta_baby1_m4 m4_803c_1
-rename q803_penta_baby2_m4 m4_803c_2
-rename q803_penta_baby3_m4 m4_803c_3
+rename q803_penta_baby1_m4 m4_baby1_803c
+rename q803_penta_baby2_m4 m4_baby2_803c
+rename q803_penta_baby3_m4 m4_baby3_803c
 
-rename q803_pneumococcal_baby1_m4 m4_803d_1
-rename q803_pneumococcal_baby2_m4 m4_803d_2
-rename q803_pneumococcal_baby3_m4 m4_803d_3
+rename q803_pneumococcal_baby1_m4 m4_baby1_803d
+rename q803_pneumococcal_baby2_m4 m4_baby2_803d
+rename q803_pneumococcal_baby3_m4 m4_baby3_803d
 
-rename q803_rotavirus_baby1_m4 m4_803e_1
-rename q803_rotavirus_baby2_m4 m4_803e_2
-rename q803_rotavirus_baby3_m4 m4_803e_3
+rename q803_rotavirus_baby1_m4 m4_baby1_803e
+rename q803_rotavirus_baby2_m4 m4_baby2_803e
+rename q803_rotavirus_baby3_m4 m4_baby3_803e
 
-rename q803_othervax_baby1_m4 m4_803f_1
-rename q803_othervax_baby2_m4 m4_803f_2
-rename q803_othervax_baby3_m4 m4_803f_3
+rename q803_othervax_baby1_m4 m4_baby1_803f
+rename q803_othervax_baby2_m4 m4_baby2_803f
+rename q803_othervax_baby3_m4 m4_baby3_803f
 
-rename q804_othervaxspec_baby1_m4 m4_803g_1
-rename q804_othervaxspec_baby2_m4 m4_803g_2
-rename q804_othervaxspec_baby3_m4 m4_803g_3
+rename q804_othervaxspec_baby1_m4 m4_baby1_803g
+rename q804_othervaxspec_baby2_m4 m4_baby2_803g
+rename q804_othervaxspec_baby3_m4 m4_baby3_803g
 
-rename q804_vaxloc_baby1_m4 m4_804_1
-rename q804_vaxloc_baby2_m4 m4_804_2
-rename q804_vaxloc_baby3_m4 m4_804_3 
+rename q804_vaxloc_baby1_m4 m4_baby1_804
+rename q804_vaxloc_baby2_m4 m4_baby2_804
+rename q804_vaxloc_baby3_m4 m4_baby3_804 
 
 rename in_total_how_much_did_805 m4_805
 rename q901_oop_m4 m4_901 
@@ -1148,12 +1193,12 @@ rename did_you_spend_money_902e m4_902e
 rename how_much_money_did_you_902e m4_902e_amt
 rename so_how_much_in_total_903 m4_903
 rename so_how_much_in_total_904 m4_904
-rename m4_905___1 m4_905_1
-rename m4_905___2 m4_905_2
-rename m4_905___3 m4_905_3
-rename m4_905___4 m4_905_4
-rename m4_905___5 m4_905_5
-rename m4_905___6 m4_905_6
+rename m4_905___1 m4_905a
+rename m4_905___2 m4_905b
+rename m4_905___3 m4_905c
+rename m4_905___4 m4_905d
+rename m4_905___5 m4_905e
+rename m4_905___6 m4_905f
 rename m4_905___96 m4_905_96
 rename m4_905___998 m4_905_998
 rename m4_905___999 m4_905_999
@@ -1164,6 +1209,208 @@ rename specify_other_sources_of_906 m4_ot1_oth
 rename conclusion_dead_baby_m4 m4_conclusion_dead_baby
 rename module_4_follow_up_phone_survey_ m4_complete
 
+
+	* MODULE 5:
+rename ic_may_i_proceed_with_the m5_start
+rename b1_permission_granted_to_c m5_consent
+rename q102_m5 m5_date
+rename (q113_m5 q114_m5 q115_m5 q115_m5_oth) (m5_maternal_death_reported  ///
+		m5_date_of_maternal_death m5_maternal_death_learn m5_maternal_death_learn_other)
+
+rename (q201a_m5 q201b_m5 q201c_m5 q202a_m5 q202b_m5 q202c_m5 q203a_m5___1 q203a_m5___2 ///
+		q203a_m5___3 q203a_m5___4 q203a_m5___5 q203a_m5___6 q203a_m5___7 q203a_m5___99 q203b_m5___1 ///
+		q203b_m5___2 q203b_m5___3 q203b_m5___4 q203b_m5___5 q203b_m5___6 q203b_m5___7 q203b_m5___99 ///
+		q203c_m5___1 q203c_m5___2 q203c_m5___3 q203c_m5___4 q203c_m5___5 q203c_m5___6 q203c_m5___7 ///
+		q203c_m5___99 eth_1_2_m5 eth_1_2_m5_unk q204_m5) (m5_baby1_alive m5_baby2_alive ///
+		m5_baby3_alive m5_baby1_health m5_baby2_health m5_baby3_health m5_baby1_feed_a ///
+		m5_baby1_feed_b m5_baby1_feed_c m5_baby1_feed_d m5_baby1_feed_e m5_baby1_feed_f m5_baby1_feed_h  ///
+		m5_baby1_feed_99 m5_baby2_feed_a m5_baby2_feed_b m5_baby2_feed_c m5_baby2_feed_d m5_baby2_feed_e ///
+		m5_baby2_feed_f m5_baby2_feed_h m5_baby2_feed_99 m5_baby3_feed_a m5_baby3_feed_b m5_baby3_feed_c ///
+		m5_baby3_feed_d m5_baby3_feed_e m5_baby3_feed_f m5_baby3_feed_h m5_baby3_feed_99 m5_feed_freq_et ///
+		m5_feed_freq_et_unk m5_breastfeeding)		
+		
+rename (q203a_m5___998 q203a_m5___999 q203a_m5___888) (m5_baby1_feed_998 m5_baby1_feed_999 m5_baby1_feed_888) 	
+
+rename (q203b_m5___998 q203b_m5___999 q203b_m5___888) (m5_baby2_feed_998 m5_baby2_feed_999 m5_baby2_feed_888)
+
+rename (q203c_m5___998 q203c_m5___999 q203c_m5___888) (m5_baby3_feed_998 m5_baby3_feed_999 m5_baby3_feed_888)	
+
+rename (q205a_1_m5 q205a_2_m5 q205a_3_m5 q205b_1_m5 q205b_2_m5 q205b_3_m5 q205c_1_m5 ///
+		q205c_2_m5 q205c_3_m5 q205d_1_m5 q205d_2_m5 q205d_3_m5 q205e_1_m5 q205e_2_m5 ///
+		q205e_3_m5 q205f_1_m5 q205f_2_m5 q205f_3_m5 q205g_1_m5 q205g_2_m5 q205g_3_m5) ///
+		(m5_baby1_sleep m5_baby2_sleep m5_baby3_sleep m5_baby1_feed m5_baby2_feed ///
+		m5_baby3_feed m5_baby1_breath m5_baby2_breath m5_baby3_breath m5_baby1_stool ///
+		m5_baby2_stool m5_baby3_stool m5_baby1_mood m5_baby2_mood m5_baby3_mood m5_baby1_skin ///
+		m5_baby2_skin m5_baby3_skin m5_baby1_interactivity m5_baby2_interactivity m5_baby3_interactivity)
+
+rename (q206a_1_m5 q206a_2_m5 q206a_3_m5 q206b_1_m5 q206b_2_m5 q206b_3_m5 ///
+		q206c_1_m5 q206c_2_m5 q206c_3_m5 q206d_1_m5 q206d_2_m5 q206d_3_m5 ///
+		q206e_1_m5 q206e_2_m5 q206e_3_m5 q206f_1_m5 q206f_2_m5 q206f_3_m5 ///
+		q206g_1_m5 q206g_2_m5 q206g_3_m5 q206h_1_m5 q206h_2_m5 q206h_3_m5 ///
+		q206i_1_m5 q206i_2_m5 q206i_3_m5 q206j_1_m5 q206j_2_m5 q206j_3_m5 ///
+		q206k_1_m5 q206_k_2_m5 q206_k_3_m5 q206_i_1_m5 q206_i_2_m5 q206_i_3_m5) ///
+	   (m5_baby1_issues_a m5_baby2_issues_a m5_baby3_issues_a m5_baby1_issues_b m5_baby2_issues_b ///
+	    m5_baby3_issues_b m5_baby1_issues_c m5_baby2_issues_c m5_baby3_issues_c m5_baby1_issues_d ///
+		m5_baby2_issues_d m5_baby3_issues_d m5_baby1_issues_e m5_baby2_issues_e m5_baby3_issues_e ///
+		m5_baby1_issues_f m5_baby2_issues_f m5_baby3_issues_f m5_baby1_issues_g m5_baby2_issues_g ///
+		m5_baby3_issues_g m5_baby1_issues_h m5_baby2_issues_h m5_baby3_issues_h m5_baby1_issues_i ///
+		m5_baby2_issues_i m5_baby3_issues_i m5_baby1_issues_j m5_baby2_issues_j m5_baby3_issues_j ///
+		m5_baby1_issues_k m5_baby2_issues_k m5_baby3_issues_k m5_baby1_issues_l m5_baby2_issues_l m5_baby3_issues_l)
+
+rename (q207a_1_m5 q207a_2_m5 q207a_3_m5 q207a_1_m5_oth q207a_2_m5_oth q207a_3_m5_oth ///
+		q208a_1_m5 q208a_2_m5 q208a_3_m5 q208a_1_m5_oth q208a_2_m5_oth q208a_3_m5_oth) ///
+	   (m5_baby1_issues_oth m5_baby2_issues_oth m5_baby3_issues_oth m5_baby1_issues_oth_text ///
+	   m5_baby2_issues_oth_text m5_baby3_issues_oth_text m5_baby1_death m5_baby2_death ///
+	   m5_baby3_death m5_baby1_death_date m5_baby2_death_date m5_baby3_death_date)
+		
+rename (q209a_m5 q209b_m5 q209c_m5 q210a_m5) (m5_baby1_death_age m5_baby2_death_age m5_baby3_death_age ///
+		m5_baby1_death_cause)		
+
+rename (q210a_m5_oth q210b_m5 q210b_m5_oth q210c_m5 q210c_m5_oth q211a_m5 q211b_m5 before_died_baby_3_v2 ///
+		q212a_m5 q212b_m5 q212c_m5) (m5_baby1_deathcause_other m5_baby2_death_cause m5_baby2_deathcause_other ///
+		m5_baby3_death_cause m5_baby3_deathcause_other m5_baby1_advice m5_baby2_advice m5_baby3_advice ///
+		m5_baby1_deathloc m5_baby2_deathloc m5_baby3_deathloc)
+
+rename (q301_m5 q302a_m5 q302b_m5 q302c_m5 q302d_m5 q302e_m5 q303a_m5 q303b_m5 q303c_m5 q303d_m5 q303e_m5 ///
+		q303f_m5 q303g_m5 q303h_m5 q303i_m5) (m5_health m5_health_a m5_health_b m5_health_c m5_health_d ///
+		m5_health_e m5_depression_a m5_depression_b m5_depression_c m5_depression_d m5_depression_e ///
+		m5_depression_f m5_depression_g m5_depression_h m5_depression_i)
+
+rename (q304_m5 q305a_m5 q305b_m5 q305c_m5 q305d_m5 q305e_m5 q305f_m5 q305g_m5 q305h_m5 q306_m5 q307_m5 ///
+		q308_m5 q309_m5 q310_m5) (m5_affecthealth_scale m5_feeling_a m5_feeling_b m5_feeling_c m5_feeling_d ///
+		m5_feeling_e m5_feeling_f m5_feeling_g m5_feeling_h m5_pain m5_leakage m5_leakage_when ///
+		m5_leakage_affect m5_leakage_tx)
+		
+rename (q311_m5___0 q311_m5___1 q311_m5___2 q311_m5___3 q311_m5___4 q311_m5___5 q311_m5___6 q311_m5___7 ///
+		q311_m5___8) (m5_leakage_notx_reason_0 m5_leakage_notx_reason_1 m5_leakage_notx_reason_2 ///
+		m5_leakage_notx_reason_3 m5_leakage_notx_reason_4 m5_leakage_notx_reason_5 m5_leakage_notx_reason_6 ///
+		m5_leakage_notx_reason_7 m5_leakage_notx_reason_8)		
+				
+rename (q311_m5___9 q311_m5___10 q311_m5___11 q311_m5___96 q311_m5___99 q311_m5___998 q311_m5___999 q311_m5___888) ///
+	   (m5_leakage_notx_reason_9 m5_leakage_notx_reason_10 m5_leakage_notx_reason_11 m5_leakage_notx_reason_96 ///
+	   m5_leakage_notx_reason_99 m5_leakage_notx_reason_998 m5_leakage_notx_reason_999 m5_leakage_notx_reason_888)		
+		
+rename q311_m5_oth m5_leakage_notx_reason_oth		
+
+rename (q312_m5 q401_m5 q402_m5 q403_m5 q404_m5 q405a_m5 q405b_m5 q406a_m5 q406b_m5 q501a_m5 q501b_m5 q502_m5) ///
+	   (m5_leakage_txeffect m5_401 m5_402 m5_403 m5_404 m5_405a m5_405b m5_406a m5_406b m5_501a m5_501b m5_502)
+
+rename (q503a_1_m5 q503b_1_m5 q503c_1_m5 q504a_1_m5 q504a_1_m5_oth q504a_1_1_m5_oth q504b_1_m5 ///
+		q504c_1_m5 q505_m5 q507_m5 q509_m5) (m5_503_1 m5_503_2 m5_503_3 m5_504a_1 m5_504a_other_a_1 ///
+		m5_504a_other_b_1 m5_504a_2 m5_504a_3 m5_505_1 m5_505_2 m5_505_3)
+
+rename (q506_m5___1 q506_m5___2 q506_m5___3 q506_m5___4 q506_m5___5 q506_m5___6 q506_m5___7 q506_m5___8 ///
+		q506_m5___9 q506_m5___10 q506_m5___96 q506_m5___98 q506_m5___99 q506_m5_oth) (m5_consultation1_a ///
+		m5_consultation1_b m5_consultation1_c m5_consultation1_d m5_consultation1_e m5_consultation1_f ///
+		m5_consultation1_g m5_consultation1_h m5_consultation1_i m5_consultation1_j m5_consultation1_oth ///
+		m5_consultation1_98 m5_consultation1_99 m5_consultation1_oth_text)
+		
+rename (q506_m5___998 q506_m5___999 q506_m5___888) ///
+	   (m5_consultation1_998 m5_consultation1_999 m5_consultation1_888)		
+
+rename (q508_m5___1 q508_m5___2 q508_m5___3 q508_m5___4 q508_m5___5 q508_m5___6 q508_m5___7 q508_m5___8 ///
+		q508_m5___9 q508_m5___10 q508_m5___96 q508_m5___98 q508_m5___99 q508_m5_oth) (m5_consultation2_a ///
+		m5_consultation2_b m5_consultation2_c m5_consultation2_d m5_consultation2_e m5_consultation2_f ///
+		m5_consultation2_g m5_consultation2_h m5_consultation2_i m5_consultation2_j m5_consultation2_oth ///
+		m5_consultation2_98 m5_consultation2_99 m5_consultation2_oth_text)
+		
+rename (q508_m5___998 q508_m5___999 q508_m5___888) (m5_consultation2_998 m5_consultation2_999 m5_consultation2_888)		
+
+rename (q510_m5___1 q510_m5___2 q510_m5___3 q510_m5___4 q510_m5___5 q510_m5___6 q510_m5___7 q510_m5___8 ///
+		q510_m5___9 q510_m5___10 q510_m5___96 q510_m5___98 q510_m5___99 q510_m5_oth) (m5_consultation3_a ///
+		m5_consultation3_b m5_consultation3_c m5_consultation3_d m5_consultation3_e m5_consultation3_f ///
+		m5_consultation3_g m5_consultation3_h m5_consultation3_i m5_consultation3_j m5_consultation3_oth ///
+		m5_consultation3_98 m5_consultation3_99 m5_consultation3_oth_text)
+		
+rename (q510_m5___998 q510_m5___999 q510_m5___888) (m5_consultation3_998 m5_consultation3_999 m5_consultation3_888)		
+
+rename (q511_m5___1 q511_m5___2 q511_m5___3 q511_m5___4 q511_m5___5 q511_m5___6 q511_m5___7 ///
+		q511_m5___8 q511_m5___9 q511_m5___10 q511_m5___11 q511_m5___96 q511_m5___98 q511_m5___99 ///
+		q511_m5_oth q601_m5 q602_m5 q603_m5) (m5_no_visit_a m5_no_visit_b m5_no_visit_c m5_no_visit_d ///
+		m5_no_visit_e m5_no_visit_f m5_no_visit_g m5_no_visit_h m5_no_visit_i m5_no_visit_j m5_no_visit_k ///
+		m5_no_visit_96 m5_no_visit_98 m5_no_visit_99 m5_no_visit_oth m5_consultation1_carequality ///
+		m5_consultation2_carequality  m5_consultation3_carequality )
+		
+rename (q511_m5___998 q511_m5___999 q511_m5___888) (m5_no_visit_998 m5_no_visit_999 m5_no_visit_888)	
+
+rename (q701a_m5 q701b_m5 q701c_m5 q701d_m5 q701e_m5 chest_listened_601f_v2 q701g_m5 q701h_m5 q701i_m5 ///
+		q701i_m5_oth q702a_m5 q702b_m5 q702c_m5 q702d_m5 q702e_m5 q702f_m5 q702g_m5) (m5_701a m5_701b ///
+		m5_701c m5_701d m5_701e m5_701f m5_701g m5_701h m5_701i m5_701_other m5_702a m5_702b m5_702c ///
+		m5_702d m5_702e m5_702f m5_702g)
+
+rename (q703_m5___0 q703_m5___1 q703_m5___2 q703_m5___3 q703_m5___4 q703_m5___5 q703_m5___6 q703_m5___96 ///
+		q703_m5___98 q703_m5___99 q703_m5_oth) (m5_baby1_703a m5_baby1_703b m5_baby1_703c m5_baby1_703d ///
+		m5_baby1_703e m5_baby1_703f m5_baby1_703g m5_baby1_703_96 m5_baby1_703_98 m5_baby1_703_99 ///
+		m5_baby1_703_other)
+
+rename (q703_m5___998 q703_m5___999 q703_m5___888) (m5_baby1_703_998 m5_baby1_703_999 m5_baby1_703_888)		
+		
+rename (q703_2_m5___0 q703_2_m5___1 q703_2_m5___2 q703_2_m5___3 q703_2_m5___4 q703_2_m5___5 q703_2_m5___6 ///
+		q703_2_m5___96 q703_2_m5___98 q703_2_m5___99 q703_m5_oth_2) (m5_baby2_703a m5_baby2_703b m5_baby2_703c ///
+		m5_baby2_703d m5_baby2_703e m5_baby2_703f m5_baby2_703g m5_baby2_703_96 m5_baby2_703_98 m5_baby2_703_99 ///
+		m5_baby2_703_other)
+
+rename (q703_2_m5___998 q703_2_m5___999 q703_2_m5___888) (m5_baby2_703_998 m5_baby2_703_999 m5_baby2_703_888)				
+rename (q703_3_m5___0 q703_3_m5___1 q703_3_m5___2 q703_3_m5___3 q703_3_m5___4 q703_3_m5___5 q703_3_m5___6 ///
+		q703_3_m5___96 q703_3_m5___98 q703_3_m5___99 q703_m5_oth_3) (m5_baby3_703a m5_baby3_703b m5_baby3_703c ///
+		m5_baby3_703d m5_baby3_703e m5_baby3_703f m5_baby3_703g m5_baby3_703_96 m5_baby3_703_98 m5_baby3_703_99 ///
+		m5_baby3_703_other)
+
+rename (q703_3_m5___998 q703_3_m5___999 q703_3_m5___888) (m5_baby3_703_998 m5_baby3_703_999 m5_baby3_703_888)	
+
+rename (q801a_m5 q801b_m5 q801c_m5 q801d_m5 q801e_m5 q801f_m5 q801g_m5 q801h_m5 q801h_m5_oth) (m5_801a ///
+		m5_801b m5_801c m5_801d m5_801e m5_801f m5_801g m5_801h m5_801_other)
+
+rename (q802_m5 q803a_m5 q803b_m5 q803c_m5 q803d_m5 q803e_m5 q803f_m5 q803g_m5 q804a_m5 q804b_m5 q804c_m5) ///
+	   (m5_802 m5_803a m5_803b m5_803c m5_803d m5_803e m5_803f m5_803g m5_804a m5_804b m5_804c)
+
+rename (q901a_m5 q901b_m5 q901c_m5 q901d_m5 q901e_m5 q901f_m5 q901g_m5 q901h_m5 q901i_m5 q901j_m5 ///
+		q901k_m5 q901l_m5 q901m_m5 q901n_m5 q901o_m5 q901p_m5 q901q_m5 q901r_m5 q901s_m5 q901s_m5_oth) ///
+	   (m5_901a m5_901b m5_901c m5_901d m5_901e m5_901f m5_901g m5_901h m5_901i m5_901j m5_901k m5_901l ///
+	   m5_901m m5_901n m5_901o m5_901p m5_901q m5_901r m5_901s m5_901s_other)
+
+rename (q902c_m5 q902d_m5 q902e_m5) (m5_902b  m5_902c  m5_902d)
+
+rename q902g_m5 m5_902f 
+
+rename (q902h q902i_m5 q902j_m5 q902j_m5_oth q902a_m5 q902b_m5 q902f_m5 q903a_m5 q903b_m5 q903c_m5 ///
+		q903d_m5 q903e_m5 q903f_m5 q903g_m5 q903g_m5_oth q904_m5) (m5_902h m5_902i m5_902j m5_902_other ///
+		m5_902k m5_902l m5_902m m5_903a m5_903b m5_903c m5_903d m5_903e m5_903f m5_903_other m5_903_oth_text ///
+		m5_904)
+
+rename (in_total_how_much_did_805_v2 q1001_m5 q1002a_m5 q1002a_m5_oth q1002b_m5 q1002b_m5_oth q1002c_m5 ///
+		q1002c_m5_oth q1002d_m5 q1002d_m5_oth q1002e_m5 q1002e_m5_oth) (m5_905 m5_1001 m5_1002a_yn ///
+		m5_1002a m5_1002b_yn m5_1002b m5_1002c_yn m5_1002c m5_1002d_yn m5_1002d m5_1002e_yn m5_1002e)
+
+rename (q1003a_m5 q1003b_m5 q1004_m5) (m5_1003 m5_1003_confirm m5_1004)
+
+rename (q1005_m5___1 q1005_m5___2 q1005_m5___3 q1005_m5___4 q1005_m5___5 q1005_m5___6 q1005_m5___96 ///
+		q1005_m5_oth q1101_m5 q1102_m5) (m5_1005a m5_1005b m5_1005c m5_1005d m5_1005e m5_1005f ///
+		m5_1005_other m5_1005_oth_text m5_1101 m5_1102)
+
+rename (q1005_m5___998 q1005_m5___999 q1005_m5___888) (m5_1005_998 m5_1005_999 m5_1005_888)		
+		
+rename q1102_m5_oth m5_1102_other
+
+rename (q1103_m5 q1104_m5) (m5_1103 m5_1104)
+
+rename q1103_m5_oth m5_1104_other
+
+rename (q1105_m5 q1201_m5 m5_1202) (m5_1105 m5_1201 m5_1202a)
+
+rename (q1301_m5 q1302_m5 m5_1302 time_1_systolic time_1_diastolic_1301b time_1_pulse_rate_per_1301c ///
+		time_1_systolic_2 time_1_diastolic_1301b_2 time_1_pulse_rate_per_1301c_2 time_1_systolic_3 ///
+		time_1_diastolic_1301b_3 time_1_pulse_rate_per_1301c_3 q1306_m5 hemoglobin_level_from_1307) ///
+	   (m5_height m5_weight m5_muac m5_sbp1 m5_dbp1 m5_hr1 m5_sbp2 m5_dbp2 m5_hr2 m5_sbp3 m5_dbp3 ///
+	   m5_hr3 m5_anemiatest m5_hb_level)
+
+rename (q1401_m5 m5_1401_2 q1401_m10) (m5_baby1_weight m5_baby2_weight m5_baby3_weight)
+
+rename (q1402_m5 q1402_m6 q1402_m7) (m5_baby1_length m5_baby2_length m5_baby3_length)
+
+rename (q1403_m6 q1403_m5 q1403_m7) (m5_baby1_hc m5_baby2_hc m5_baby3_hc)
+
+rename module_5_end_line_facetoface_sur m5_complete
 
 	* MATERNAL CARDS:
 rename (q1501 date age gravid lmp edd para number_of_children_alive previous_stillbirth ///
@@ -1203,7 +1450,7 @@ rename (hemoglobin blood_group_and_rh tt_does iron_folic_acid mbendazole use_of_
 
 * dropping people with incomplete M2 surveys	
 		
-egen m2_drop = rowtotal(m2_201 m2_202 m2_203a m2_203b m2_203c m2_203d m2_203e m2_203f m2_203g m2_203h m2_203i m2_204a_et m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et m2_204g_et m2_204h_et m2_204i m2_205a m2_205b m2_205c m2_205d m2_205e m2_205f m2_205g m2_205h m2_205i m2_206 m2_207 m2_208 m2_301 m2_302 m2_303a m2_303b m2_303c m2_303d m2_303e m2_304a m2_304b m2_304c m2_304d m2_304e m2_305 m2_306 m2_307_1 m2_307_2 m2_307_3 m2_307_4 m2_307_5 m2_307_96 m2_307_888_et m2_307_998_et m2_307_999_et m2_308 m2_310_1 m2_310_2 m2_310_3 m2_310_4 m2_310_5 m2_310_96 m2_310_888_et m2_310_998_et m2_310_999_et m2_309 m2_311 m2_313_1 m2_313_2 m2_313_3 m2_313_4 m2_313_5 m2_313_96 m2_313_888_et m2_313_998_et m2_313_999_et m2_312 m2_314 m2_316_1 m2_316_2 m2_316_3 m2_316_4 m2_316_5 m2_316_96 m2_314_888_et m2_314_998_et m2_314_999_et m2_315 m2_317 m2_317_1 m2_317_2 m2_317_3 m2_317_4 m2_317_5 m2_317_96 m2_317_888_et m2_317_998_et m2_317_999_et m2_318 m2_320_a m2_320_b m2_320_c m2_320_d m2_320_e m2_320_f m2_320_g m2_320_h m2_320_i m2_320_j m2_320_k m2_320_l m2_320_96 m2_320_99 m2_320_888_et m2_320_998_et m2_320_999_et m2_321 m2_401 m2_402 m2_403 m2_404 m2_405 m2_501a m2_501b m2_501c m2_501d m2_501e m2_501f m2_501g m2_502 m2_503a m2_503b m2_503c m2_503d m2_503e m2_503f m2_504 m2_505a m2_505b m2_505c m2_505d m2_505e m2_505f m2_506a m2_506b m2_506c m2_506d m2_507 m2_508a m2_508b_last m2_508b_number m2_508c m2_508d m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_602a m2_602b m2_603 m2_604 m2_701 m2_702a m2_702b m2_702c m2_702d m2_702e m2_703 m2_704 m2_705_1 m2_705_2 m2_705_3 m2_705_4 m2_705_5 m2_705_6 m2_705_96 m2_705_888_et m2_705_998_et m2_705_999_et) 
+egen m2_drop = rowtotal(m2_201 m2_202 m2_203a m2_203b m2_203c m2_203d m2_203e m2_203f m2_203g m2_203h m2_203i m2_204a_et m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et m2_204g_et m2_204h_et m2_204i m2_205a m2_205b m2_205c m2_205d m2_205e m2_205f m2_205g m2_205h m2_205i m2_206 m2_207 m2_208 m2_301 m2_302 m2_303a m2_303b m2_303c m2_303d m2_303e m2_304a m2_304b m2_304c m2_304d m2_304e m2_305 m2_306 m2_307_1 m2_307_2 m2_307_3 m2_307_4 m2_307_5 m2_307_96 m2_307_888_et m2_307_998_et m2_307_999_et m2_308 m2_310_1 m2_310_2 m2_310_3 m2_310_4 m2_310_5 m2_310_96 m2_310_888_et m2_310_998_et m2_310_999_et m2_309 m2_311 m2_313_1 m2_313_2 m2_313_3 m2_313_4 m2_313_5 m2_313_96 m2_313_888_et m2_313_998_et m2_313_999_et m2_312 m2_314 m2_316_1 m2_316_2 m2_316_3 m2_316_4 m2_316_5 m2_316_96 m2_316_888_et m2_316_998_et m2_316_999_et m2_315 m2_317 m2_319_1 m2_319_2 m2_319_3 m2_319_4 m2_319_5 m2_319_96 m2_319_888_et m2_319_998_et m2_319_999_et m2_318 m2_320_0 m2_320_1 m2_320_2 m2_320_3 m2_320_4 m2_320_5 m2_320_6 m2_320_7 m2_320_8 m2_320_9 m2_320_10 m2_320_11 m2_320_96 m2_320_99 m2_320_888_et m2_320_998_et m2_320_999_et m2_321 m2_401 m2_402 m2_403 m2_404 m2_405 m2_501a m2_501b m2_501c m2_501d m2_501e m2_501f m2_501g m2_502 m2_503a m2_503b m2_503c m2_503d m2_503e m2_503f m2_504 m2_505a m2_505b m2_505c m2_505d m2_505e m2_505f m2_506a m2_506b m2_506c m2_506d m2_507 m2_508a m2_508b_num m2_508b_yn m2_508c_yn m2_508c_time m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_602a m2_602b m2_603 m2_604 m2_701 m2_702a m2_702b m2_702c m2_702d m2_702e m2_703 m2_704 m2_705_1 m2_705_2 m2_705_3 m2_705_4 m2_705_5 m2_705_6 m2_705_96 m2_705_888_et m2_705_998_et m2_705_999_et) 
 
 drop if m2_drop == 0 & redcap_event_name == "module_2_arm_1"
 
@@ -1215,12 +1462,14 @@ drop m2_drop
 /* Gestational age at ANC1:
 			Here we should recalculate the GA based on LMP (m1_802c and self-report m1_803 */
 			gen m1_ga = m1_802d_et // GA based on LNMP
+			char m1_ga[Original_ET_Varname] `m1_802d_et[Original_ET_Varname]'
 			recode m1_803 98=.
 			replace m1_ga = m1_803 if m1_ga == . // ga based on self report of weeks pregnant if LMP not known
 			lab var m1_ga "Gestional age based on LNMP (calc)"
 			
-			recode m1_ga (1/12.99999 = 1) (13/26.99999= 2) (27/50=3), gen(m1_trimester)
-			lab def trimester2 1"1st trimester 0-12wks" 2"2nd trimester 13-26 wks" 3 "3rd trimester 27-42 wks"
+			recode m1_ga (1/12.99999 = 1) (13/27.99999= 2) (28/50=3), gen(m1_trimester)
+			char m1_trimester[Original_ET_Varname] `m1_ga[Original_ET_Varname]'
+			lab def trimester2 1"1st trimester 0-12wks" 2"2nd trimester 13-27 wks" 3 "3rd trimester 27-42 wks"
 			lab val m1_trimester trimester2 	
 			
 			*Carryfoward:
@@ -1235,18 +1484,21 @@ drop m2_drop
 		*format date vars:
 		*Date of M1
 		gen _m1_date_ = date(m1_date,"YMD")
+		char _m1_date_[Original_ET_Varname] `m1_date[Original_ET_Varname]'
 		drop m1_date
 		rename _m1_date_ m1_date
 		format m1_date %td	
 		
 		*Date of M2
 		gen _m2_date_ = date(m2_date,"YMD")
+		char _m2_date_[Original_ET_Varname] `m2_date[Original_ET_Varname]'
 		drop m2_date
 		rename _m2_date_ m2_date
 		format m2_date %td
 	
 		*Date of M3
 		gen _m3_date_ = date(m3_date,"YMD")
+		char _m3_date_[Original_ET_Varname] `m3_date[Original_ET_Varname]'
 		drop m3_date
 		rename _m3_date_ m3_date
 		format m3_date %td
@@ -1254,23 +1506,32 @@ drop m2_drop
 		*calculate weeks since ANC1:
 		*M2 (need last date):
 		by redcap_record_id: egen m2_lastdate = max(m2_date)
+		char m2_lastdate[Original_ET_Varname] `m2_date[Original_ET_Varname]'
 		format m2_lastdate %td
 		
 		generate time_between_m1m2 = (m2_date - m1_date)/7
+		char time_between_m1m2[Original_ET_Varname] (`m2_date[Original_ET_Varname]' - `m1_date[Original_ET_Varname]')/7
+
 		generate time_between_m1m3 = (m3_date - m1_date)/7
+		char time_between_m1m2[Original_ET_Varname] (`m3_date[Original_ET_Varname]' - `m1_date[Original_ET_Varname]')/7
+
 		
 		*New gestational age vars:
 	
 		generate m2_ga = m1_ga + time_between_m1m2
-		generate m3_ga = m1_ga + time_between_m1m3
+		char m2_ga[Original_ET_Varname] (`m1_ga[Original_ET_Varname]' - `time_between_m1m2[Original_ET_Varname]')/7
+
+		*generate m3_ga = m1_ga + time_between_m1m3
 	
 		drop time_between_m1m2 time_between_m1m3
 		
 		order m2_lastdate, after(m2_date)
-		
+	
 		*Extra cleaning from Emma's code:
 		* Recode birth dates with data entry errors
 		gen _m3_birth_or_ended_ = date(m3_birth_or_ended,"YMD")
+		char _m3_birth_or_ended_[Original_ET_Varname] `m3_birth_or_ended[Original_ET_Varname]'
+
 		drop m3_birth_or_ended
 		rename _m3_birth_or_ended_ m3_birth_or_ended
 		format m3_birth_or_ended %td
@@ -1280,7 +1541,33 @@ drop m2_drop
 		replace m3_birth_or_ended = date("2023-12-25", "YMD") if redcap_record_id=="1697-40" // fixed year
 		replace m3_birth_or_ended = date("2023-12-28", "YMD") if redcap_record_id=="1707-38" // fixed year
 		replace m3_birth_or_ended = . if redcap_record_id=="1686-1" //date of birth was entered as being before the ANC1
+		*added 7-25-24 (SS):
+		replace m3_birth_or_ended = date("2023-12-30", "YMD") if redcap_record_id=="1713-44"
+		replace m3_birth_or_ended = date("2023-09-20", "YMD") if redcap_record_id=="1695-11"
+		replace m3_birth_or_ended = date("2023-08-18", "YMD") if redcap_record_id=="1712-56"
+		replace m3_birth_or_ended = date("2023-09-13", "YMD") if redcap_record_id=="1696-32"
+		replace m3_birth_or_ended = date("2023-11-14", "YMD") if redcap_record_id=="1686-19"
+		replace m3_birth_or_ended = date("2023-11-11", "YMD") if redcap_record_id=="1701-32"
+		replace m3_birth_or_ended = date("2023-09-26", "YMD") if redcap_record_id=="1695-37"
+		replace m3_birth_or_ended = date("2023-10-13", "YMD") if redcap_record_id=="1701-19"
+	
+		gen pregnancyend_ga = ((m3_birth_or_ended)-m1_date)/7 + m1_ga
+		char pregnancyend_ga[Original_ET_Varname] (`m3_birth_or_ended[Original_ET_Varname]' - `m1_date[Original_ET_Varname]' )/7 + `m1_ga[Original_ET_Varname]'
+
+		* Date of LNMP
+		gen _m1_802c_et_ = date(m1_802c_et,"YMD")
+		char _m1_802c_et_[Original_ET_Varname] `m1_802c_et[Original_ET_Varname]'
+		drop m1_802c_et
+		rename _m1_802c_et_ m1_802c_et
+		format m1_802c_et %td
 		
+		replace m1_802c_et = date("2022-01-16 ", "YMD") if redcap_record_id=="1685-24"
+		replace m1_802c_et = date("2022-11-19 ", "YMD") if redcap_record_id=="1690-19"
+		replace m1_802c_et = date("2022-11-21 ", "YMD") if redcap_record_id=="1690-39"
+		replace m1_802c_et = date("2022-11-30", "YMD") if redcap_record_id=="1713-54"
+		replace m1_802c_et = date("2022-10-03 ", "YMD") if redcap_record_id=="1708-7"
+
+
 *===============================================================================
 	
 	* STEP TWO: ADD VALUE LABELS 
@@ -1294,6 +1581,9 @@ label values study_site woreda
 label define site 1 "Adama" 2 "East Shewa"
 
 generate site = study_site 
+char site[Original_ET_Varname] `study_site[Original_ET_Varname]'
+
+
 recode site (1 = 1) ///
             (2 3 4 5 6 7 96 = 2)
 label values site site 
@@ -1301,6 +1591,8 @@ label values site site
 * create new variable for sampling strata 
 ** we need to make sure we recode in the cleaning file the facility name and strata for st. fransisco
 generate sampstrata = facility
+char sampstrata[Original_ET_Varname] `facility[Original_ET_Varname]'
+
 recode sampstrata (2 3 4 5 6 8 9 10 11 14 16 17 19 = 1) (18 7 = 2) (22 13 15 1 12 23 96 = 3) (20 21 = 4) 
 label values sampstrata strata
 
@@ -1410,7 +1702,7 @@ label values m1_517 residence
 	 label values m1_205e EQ5Danxiety
 	 
 * QoC labels 
-	label define recommend 1 "Very likely" 2 "Somewhat likely" 3 "Not too likely" 4 "Not at all likely" 99 "NR/RF" 
+	label define recommend 1 "Very likely" 2 "SomWhat likely" 3 "Not too likely" 4 "Not at all likely" 99 "NR/RF" 
 	label values m1_602 recommend
    
 	label define satisfaction 1 "Very satisfied" 2 "Satisfied" 3 "Neither satisfied nor dissatisfied" 4 "Dissatisfied" 5 "Very dissatisfied" 98 "DK" 99 "NR/RF" 
@@ -1430,7 +1722,7 @@ label values m1_517 residence
 	label values m1_302 hsview
 	
 	label define confidence 1 "Very confident" ///
-	                        2 "Somewhat confident" ///
+	                        2 "SomWhat confident" ///
 							3 "Not very confident" ///
 							4 "Not at all confident" ///
 							98 "DK" ///
@@ -1507,7 +1799,7 @@ label values m1_517 residence
 	label values m1_1212 m1_1213 m1_1214 m1_1215 YN
 
 	label define insurance_type 1 "Community based health insurance" 2 "Employer-provided health insurance (reimbursement)" 3 "Private health insurance" 96 "Other (specify)" 98 "DK" 99 "NR/RF"
-	label values m1_1221 insurance_type
+	label values m1_1222 insurance_type
 	
 	** MODULE 2:
 	
@@ -1559,7 +1851,7 @@ label values m1_517 residence
 	label define m2_203g 1 "Yes" 0 "No" 98 "DK" 99 "NR/RF" 
 	label values m2_203g m2_203g
 
-	label define mx2_203h 1 "Yes" 0 "No" 98 "DK" 99 "NR/RF" 
+	label define m2_203h 1 "Yes" 0 "No" 98 "DK" 99 "NR/RF" 
 	label values m2_203h m2_203h
 
 	label define m2_203i 1 "Yes" 0 "No" 98 "DK" 99 "NR/RF" 
@@ -1598,7 +1890,7 @@ label values m1_517 residence
 	label define m2_205b 0 "None of the days" 1 "Several days" 2 "More than half the days (>7)" 3 "Nearly every day" 
 	label values m2_205b m2_205b
 
-	label define m2_205_ 0 "None of the days" 1 "Several days" 2 "More than half the days (>7)" 3 "Nearly every day" 99 "NR/RF"
+	label define m2_205c 0 "None of the days" 1 "Several days" 2 "More than half the days (>7)" 3 "Nearly every day" 99 "NR/RF"
 	label values m2_205c m2_205c
 
 	label define m2_205d 0 "None of the days" 1 "Several days" 2 "More than half the days (>7)" 3 "Nearly every day" 99 "NR/RF" 
@@ -1831,14 +2123,11 @@ label values m1_517 residence
 	label define m2_508a 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
 	label values m2_508a m2_508a
 	
-	label define m2_508b_number 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
-	label values m2_508b_number m2_508b_number
+	label define m2_508b_yn 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
+	label values m2_508b_yn m2_508b_yn
 
-	label define m2_508b_last 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
-	label values m2_508b_last m2_508b_last
-	
-	label define m2_508c 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
-	label values m2_508c m2_508c
+	label define m2_508c_yn 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
+	label values m2_508c_yn m2_508c_yn
 
 	label define m2_509a 1 "Yes" 0 "No" 98 "DK" 99 "RF" 
 	label values m2_509a m2_509a
@@ -1924,7 +2213,7 @@ label values m1_517 residence
 label define m2_interview_inturrupt 1 "Yes" 0 "No" 
 label values m2_interview_inturrupt m2_interview_inturrupt
 
-label define m2_interview_restarted_ 1 "Yes" 0 "No" 
+label define m2_interview_restarted 1 "Yes" 0 "No" 
 label values m2_interview_restarted m2_interview_restarted
 
 label define m2_endstatus 1 "Active follow-up" 2 "Lost to follow-up" 3 "Decline further participation" 4 "Maternal death" 5 "No longer pregnant"
@@ -1949,7 +2238,7 @@ label values m3_baby1_gender m3_baby2_gender m3_baby3_gender m3_gender
 	
 label define m3_weight 1 "Very large" 2 "Larger than average" 3 "Average" ///
 					   4 "Smaller than average" 5 "Very small"
-label values m3_baby1_weight m3_baby2_weight m3_baby3_weight m3_weight
+label values m3_baby1_size m3_baby2_size m3_baby3_size m3_weight
 	
 label define m3_overallhealth 1 "Excellent" 2 "Very Good" 3 "Good" ///
 							  4 "Fair" 5 "Poor" 99 "NR/RF"
@@ -1957,7 +2246,7 @@ label values m3_baby1_health m3_baby2_health m3_baby3_health m3_1001 ///
 			 m3_1004a m3_1004b m3_1004c m3_1004d m3_1004e m3_1004f ///
 			 m3_1004g m3_1004h m3_overallhealth	
 
-label define m3_confidence 1 "Very confident" 2 "Confident" 3 "Somewhat confident" ///
+label define m3_confidence 1 "Very confident" 2 "Confident" 3 "SomWhat confident" ///
 						   4 "Not very confident" 5 "Not at all confident" ///
 						   96 "I do not breastfeed" 98 "DK" 99 "NR/RF"
 label values m3_breastfeeding m3_confidence
@@ -1965,7 +2254,7 @@ label values m3_breastfeeding m3_confidence
 label define m3_202	3 "Delivered with still birth" 4 "Miscarriage" 5 "Abortion"
 label values m3_202 m3_202
 
-label define YNDKRF 1 "Yes" 0 "No" 98 "Don't Know" 99 "NR/RF"
+label define m3_YNDKRF 1 "Yes" 0 "No" 98 "Don't Know" 99 "NR/RF"
 label values m3_1201 m3_1203 m3_401 m3_consultation_1 m3_consultation_referral_1 ///
 			 m3_consultation_2 m3_consultation_referral_2 ///
 			 m3_consultation_3 m3_consultation_referral_3 ///
@@ -2082,7 +2371,7 @@ label define feeding 1 "Normal feeding" 2 "Slight feeding problems" 3 "Moderate 
 label values m3_baby1_feed m3_baby2_feed m3_baby3_feed feeding
 
 label define breathing 1 "Normal breathing" 2 "Slight breathing problems" 3 "Moderate breathing problems" 4 "Severe breathing problems" 
-label values m3_baby1_breath m3_baby2_breath m3_baby3_breath
+label values m3_baby1_breath m3_baby2_breath m3_baby3_breath breathing
 
 label define stooling 1 "Normal stooling/poo" 2 "Slight stooling/poo problems" 3 "Moderate stooling/poo problems" 4 "Severe stooling/poo problems" 
 label values m3_baby1_stool m3_baby2_stool m3_baby3_stool stooling
@@ -2119,7 +2408,7 @@ label values m3_808b m3_808b
 label define m3_809 1 "YES, NO MORE LEAKAGE AT ALL" 2 "YES, BUT STILL SOME LEAKAGE" 3 "NO, STILL HAVE PROBLEM" 98 "Don't Know" 99 "NR/RF"
 label values m3_809 m3_809
 
-label define m3_agree 1 "Very likely" 2 "Somewhat likely" 3 "Not too likely" 4 "Not at all likely" 98 "Don't Know" 99 "NR/RF"
+label define m3_agree 1 "Very likely" 2 "SomWhat likely" 3 "Not too likely" 4 "Not at all likely" 98 "Don't Know" 99 "NR/RF"
 label values m3_1002 m3_agree
 
 replace m3_1105 = "1" if m3_1105 == "A"
@@ -2146,12 +2435,14 @@ label define m3_p2_outcome 1 "Completed respondent" 2 "Partially completed and s
 						   5 "Not Available via the phones" 6 "Phone doesnt work" 96 "Other reason"  
 label values m3_p2_outcome m3_p2_outcome
 
-
 *Formatting dates/times: 
 gen double recm3_time = clock(m3_time, "hm") 
+char recm3_time[Original_ET_Varname] `m3_time[Original_ET_Varname]' 
 format recm3_time %tc_HH:MM
 
 gen _date2_ = date(m3_313a_baby1,"YMD")
+char _date2_[Original_ET_Varname] `m3_313a_baby1[Original_ET_Varname]' 
+
 drop m3_313a_baby1
 rename _date2_ m3_313a_baby1
 format m3_313a_baby1 %td
@@ -2159,11 +2450,12 @@ format m3_313a_baby1 %td
 * 4-11 SS: numeric bc of 0 obs
 format m3_313a_baby2 %td
 
-
 * 4-11 SS: numeric bc of 0 obs
 format m3_313a_baby3 %td
 
 gen double recm3_313b_baby1 = clock(m3_313b_baby1, "hm") 
+char recm3_313b_baby1[Original_ET_Varname] `m3_313b_baby1[Original_ET_Varname]' 
+
 format recm3_313b_baby1 %tc_HH:MM
 
 *gen double recm3_313b_baby2 = clock(m3_313b_baby2, "hm") // 4-8-24 SS: data already in numeric format, probably because of 0 observations
@@ -2173,6 +2465,7 @@ format m3_313b_baby2 %tc_HH:MM
 format m3_313b_baby3 %tc_HH:MM
 
 gen _date5_ = date(m3_506a,"YMD")
+char _date5_[Original_ET_Varname]  `m3_506a[Original_ET_Varname]'
 drop m3_506a
 rename _date5_ m3_506a
 format m3_506a %td
@@ -2180,37 +2473,48 @@ format m3_506a %td
 format m3_p1_date_of_rescheduled %td // 0 observations as of 4-8-24
 
 gen _date8_ = date(m3_date_p2,"YMD")
+char _date8_[Original_ET_Varname]  `m3_date_p2[Original_ET_Varname]'
 drop m3_date_p2
 rename _date8_ m3_date_p2
 format m3_date_p2 %td
 
 gen _date9_ = date(m3_p2_date_of_rescheduled,"YMD")
+char _date9_[Original_ET_Varname]  `m3_p2_date_of_rescheduled[Original_ET_Varname]'
+
 drop m3_p2_date_of_rescheduled
 rename _date9_ m3_p2_date_of_rescheduled
 format m3_p2_date_of_rescheduled %td
 
 gen double recm3_506b = clock(m3_506b, "hm") 
+char recm3_506b[Original_ET_Varname]  `m3_506b[Original_ET_Varname]'
 format recm3_506b %tc_HH:MM
 
-gen double recm3_507 = clock(m3_507, "hm") 
+gen double recm3_507 = clock(m3_507, "hm")
+char recm3_507[Original_ET_Varname]  `m3_507[Original_ET_Varname]' 
 format recm3_507 %tc_HH:MM
 
 gen double recm3_514 = clock(m3_514, "hm") 
+char recm3_514[Original_ET_Varname]  `m3_514[Original_ET_Varname]' 
 format recm3_514 %tc_HH:MM
 
-gen double recm3_520 = clock(m3_520, "hm") 
+gen double recm3_520 = clock(m3_520, "hm")
+char recm3_520[Original_ET_Varname]  `m3_520[Original_ET_Varname]'  
 format recm3_520 %tc_HH:MM
 
 gen double recm3_time_p2 = clock(m3_time_p2, "hm") 
+char recm3_time_p2[Original_ET_Varname] `m3_time_p2[Original_ET_Varname]'
 format recm3_time_p2 %tc_HH:MM 
 
 gen double recm3_endtime = clock(m3_endtime, "hm") 
+char recm3_endtime[Original_ET_Varname]  `m3_endtime[Original_ET_Varname]'  
 format recm3_endtime %tc_HH:MM 
 
 gen double recm3_p2_time_of_rescheduled = clock(m3_p2_time_of_rescheduled, "hm") 
+char recm3_p2_time_of_rescheduled[Original_ET_Varname]  `m3_p2_time_of_rescheduled[Original_ET_Varname]'  
 format recm3_p2_time_of_rescheduled %tc_HH:MM 
 
 gen double recm3_duration = clock(m3_duration, "hm") 
+char recm3_duration[Original_ET_Varname]  `m3_duration[Original_ET_Varname]'  
 format recm3_duration %tc_HH:MM 
 
 
@@ -2250,7 +2554,7 @@ foreach var of varlist m4_baby1_feed_a-  m4_203_3_888 {
 
 
 
-label define m4_204a 1 "Not at all confident" 2 " Not very confident" 3 "Somewhat confident" 4 "Confident" 5 " Very confident"  
+label define m4_204a 1 "Not at all confident" 2 " Not very confident" 3 "SomWhat confident" 4 "Confident" 5 " Very confident"  
 label values m4_204a m4_204a
 
 label define m4_baby1_sleep 1 "Sleeps well" 2 "Slightly affected sleep" 3 "Moderately affected sleep" 4 "Severely disturbed sleep" 
@@ -2334,7 +2638,7 @@ foreach var of varlist m4_303a - m4_303h  {
                  label values `var' m4_303a
           }
 
-label define m4_304 0 "Have not had sex" 1 "Not at all" 2 "A little bit" 3 "Somewhat" 4 "Quite a bit" 5 "Very much" 
+label define m4_304 0 "Have not had sex" 1 "Not at all" 2 "A little bit" 3 "SomWhat" 4 "Quite a bit" 5 "Very much" 
 label values m4_304 m4_304
 
 label define m4_305 1 "Yes" 0 "No" 
@@ -2358,6 +2662,8 @@ replace m4_309 = "10" if m4_309=="K"
 replace m4_309 = "11" if m4_309=="L" 
 replace m4_309 = "12" if m4_309=="M" 
 gen m4_309_numeric = real(m4_309)
+char m4_309_numeric[Original_ET_Varname]  `m4_309[Original_ET_Varname]'
+
 drop m4_309 
 rename m4_309_numeric m4_309 
 label define m4_309 1 "Do not know it can be fixed" 2 "You tried but did not get treatment" 3 "High cost (e.g., high out of pocket payment, not covered by insurance)" 4 "Far distance (e.g., too far to walk or drive, transport not readily available)" 5 " Poor healthcare provider skills (e.g., spent too little time with patient, did not conduct a thorough exam)" 6 "Staff don't show respect (e.g., staff is rude,impolite, dismissive)" 7 "Medicines or equipment are not available (e.g., medicines regularly out of stock, equipment like X-ray machines broken or unavailable)" 8 "COVID-19 fear" 9 "Don't know where to go/too complicated" 10 "Could not get permission" 11 "Embarrassment" 12 "Problem disappeared" 96 " Other (specify)" 
@@ -2385,21 +2691,21 @@ label define m4_404a 1 "Meki Catholic Primary Clinic" 2 "Bote Health Center" 3 "
 label values m4_404a m4_404a
 label values m4_404b m4_404a
 label values m4_404c m4_404a
-label values m4_405 m4_401a
+label values m4_405a m4_401a
 
-foreach var of varlist m4_406a - m4_406_888  {
+foreach var of varlist m4_405a_1 - m4_405a_888  {
                  label values `var' m4_baby1_feed_a
           }
 
-label values m4_407 m4_401a
+label values m4_405b m4_401a
 
-foreach var of varlist m4_408a - m4_408_888  {
+foreach var of varlist m4_405b_1 - m4_405b_888  {
                  label values `var' m4_baby1_feed_a
           }
 
-label values m4_409 m4_401a
+label values m4_405c m4_401a
 
-foreach var of varlist m4_410a - m4_410_888  {
+foreach var of varlist m4_405c_1 - m4_405c_888  {
                  label values `var' m4_baby1_feed_a
           }
 
@@ -2437,13 +2743,13 @@ foreach var of varlist m4_602a - m4_602g  {
                  label values `var' m4_401a
           }	
 
-foreach var of varlist m4_baby1_603a - m4_603_1_888  {
+foreach var of varlist m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 m4_baby1_603_98 m4_baby1_603_99 m4_baby1_603_998 m4_baby1_603_999 m4_baby1_603_888  {
                  label values `var' m4_baby1_feed_a
           }			  
-foreach var of varlist m4_baby2_603a - m4_603_2_888  {
+foreach var of varlist m4_baby2_603a - m4_baby2_603_888  {
                  label values `var' m4_baby1_feed_a
           }		
-foreach var of varlist m4_baby3_603a - m4_603_3_888  {
+foreach var of varlist m4_baby3_603a - m4_baby3_603_888  {
                  label values `var' m4_baby1_feed_a
           }		
 foreach var of varlist m4_701a - m4_701h  {
@@ -2457,19 +2763,19 @@ foreach var of varlist m4_801a - m4_801r  {
                  label values `var' m4_401a
           }	
 
-foreach var of varlist m4_baby1_802a - m4_802j_1  {
+foreach var of varlist m4_baby1_802a - m4_baby1_802j  {
                  label values `var' m4_401a
           }	
-label values m4_802j_2 m4_401a
-label values m4_802j_3 m4_401a
+label values m4_baby2_802j m4_401a
+label values m4_baby3_802j m4_401a
 
-foreach var of varlist m4_803a_1 - m4_803f_3  {
+foreach var of varlist m4_baby1_803a - m4_baby3_803f  {
                  label values `var' m4_401a
           }	
 
-label define m4_804_1 1 "At home" 2 "At a facility" 3 "At another location" 
-foreach var of varlist m4_804_1 - m4_804_3  {
-                 label values `var' m4_804_1
+label define m4_baby1_804 1 "At home" 2 "At a facility" 3 "At another location" 
+foreach var of varlist m4_baby1_804 - m4_baby3_804  {
+                 label values `var' m4_baby1_804
           }	
 
 foreach var of varlist m4_901 - m4_902a  {
@@ -2480,7 +2786,7 @@ label values m4_902c m4_401a
 label values m4_902d m4_401a
 label values m4_902e m4_401a	
 
-foreach var of varlist m4_905_1 - m4_905_888  {
+foreach var of varlist m4_905a - m4_905_888  {
                  label values `var' m4_baby1_feed_a
           }	
 
@@ -2488,7 +2794,7 @@ label define m4_conclusion_live_babies 1 "Yes" 2 "No, other time or place" 3 "No
 label values m4_conclusion_live_babies m4_conclusion_live_babies
 
 label define m4_conclusion_dead_baby 1 "Read" 2 "Not read"
-label values m4_conclusion_dead_baby conclusion_dead_baby_m4
+label values m4_conclusion_dead_baby m4_conclusion_dead_baby
 
 label define m4_ot1 1 "Completed respondent" 2 "Partially completed and schedule for next time" 3 "Refused" 4 "Incomplete and no more interest to continue" 5 "Not Available via the phones" 6 "Phone doesnt work" 96 "Other reason, specify" 
 label values m4_ot1 m4_ot1
@@ -2496,6 +2802,179 @@ label values m4_ot1 m4_ot1
 label define m4_complete 0 "Incomplete" 1 "Unverified" 2 "Complete" 
 label values m4_complete m4_complete	
 
+
+	* MODULE 5:
+label define YN_m5 1 "Yes" 0 "No" 98 "DK" 99 "RF"
+lab val m5_start m5_consent m5_maternal_death_reported m5_baby1_issues_a m5_baby2_issues_a m5_baby3_issues_a  ///
+		m5_baby1_issues_b m5_baby2_issues_b m5_baby3_issues_b m5_baby1_issues_c m5_baby2_issues_c m5_baby3_issues_c  ///
+		m5_baby1_issues_d m5_baby2_issues_d m5_baby3_issues_d m5_baby1_issues_e m5_baby2_issues_e m5_baby3_issues_e  ///
+		m5_baby1_issues_f m5_baby2_issues_f m5_baby3_issues_f m5_baby1_issues_g m5_baby2_issues_g m5_baby3_issues_g  ///
+		m5_baby1_issues_h m5_baby2_issues_h m5_baby3_issues_h m5_baby1_issues_i m5_baby2_issues_i m5_baby3_issues_i ///
+		m5_baby1_issues_j m5_baby2_issues_j m5_baby3_issues_j m5_baby1_issues_k m5_baby2_issues_k m5_baby3_issues_k ///
+		m5_baby1_issues_l m5_baby2_issues_l m5_baby3_issues_l m5_baby1_issues_oth m5_baby2_issues_oth  ///
+		m5_baby3_issues_oth m5_baby1_death m5_baby2_death m5_baby3_death m5_baby1_advice m5_baby2_advice ///
+		m5_baby3_advice m5_leakage m5_leakage_tx m5_406a m5_406b m5_501a m5_501b m5_505_1 m5_505_2 m5_505_3 ///
+		m5_701a m5_701b m5_701c m5_701d m5_701e m5_701f m5_701g m5_701h m5_701i m5_702a m5_702b m5_702c ///
+		m5_702d m5_702e m5_702f m5_702g m5_801a m5_801b m5_801c m5_801d m5_801e m5_801f m5_801g m5_801h m5_802 ///
+		m5_803a m5_803b m5_803c m5_803d m5_803e m5_803f m5_803g m5_804a m5_901a m5_901b m5_901c m5_901d ///
+		m5_901e m5_901f m5_901g m5_901h m5_901i m5_901j m5_901k m5_901l m5_901m m5_901n m5_901o m5_901p ///
+		m5_901q m5_901r m5_901s m5_902b m5_902c m5_902d m5_902f m5_902h m5_902i ///
+		m5_902j m5_902k m5_902l m5_902m m5_903a m5_903b m5_903c m5_903d m5_903e m5_903f m5_903_other m5_1001  ///
+		m5_1002a_yn m5_1002b_yn m5_1002c_yn m5_1002d_yn m5_1002e_yn m5_1003_confirm m5_1101 m5_1103 m5_1105 ///
+		m5_anemiatest YN_m5 	
+
+lab def m5_maternal_death_learn 1 "called respondent phone, someone else responded" 2 "called spouse/partner phone, was informed" 3 "called close friend or family member phone number, was informed" 4 "called CHW phone number, was informed" 96 "Other" 
+lab val m5_maternal_death_learn m5_maternal_death_learn
+
+lab def baby_status 1 "Alive" 0 "Died"
+lab val m5_baby1_alive m5_baby2_alive m5_baby3_alive baby_status
+
+lab def m5_likert 1 "Excellent" 2 "Very good" 3 "Good" 4 "Fair" 5 "Poor" 99 "NR/RF"
+lab val m5_baby1_health m5_baby2_health m5_baby3_health m5_health m5_401 m5_consultation1_carequality ///
+		m5_consultation2_carequality m5_consultation3_carequality  m5_likert
+
+lab def m5_confidence 1 "Very confident" 2 "Confident" 3 "SomWhat confident" 4 "Not very confident" 5 "Not at all confident" 96 "I do not breastfeed" 98 "DK" 99 "NR/RF" 
+lab val m5_breastfeeding m5_confidence
+
+label define m5_confidence2 1 "Very confident" 2 "SomWhat confident" 3 "Not very confident" 4 "Not at all confident" 98 "DK" 99 "NR/RF" 
+lab val m5_403 m5_404 m5_405a m5_405b m5_confidence2
+
+label define m5_sleep 1 "Sleeps well" 2 "Slightly affected sleep" 3 "Moderately affected sleep" 4 "Severely disturbed sleep" 
+lab val m5_baby1_sleep m5_baby2_sleep m5_baby3_sleep m5_sleep 
+
+label define m5_feeding 1 "Normal feeding" 2 "Slight feeding problems" 3 "Moderate feeding problems" 4 "Severe feeding problems" 
+lab val m5_baby1_feed m5_baby2_feed m5_baby3_feed m5_feeding
+
+label define m5_breath 1 "Normal breathing" 2 "Slight breathing problems" 3 "Moderate breathing problems" 4 "Severe breathing problems" 
+lab val m5_baby1_breath m5_baby2_breath m5_baby3_breath m5_breath
+
+label define m5_stool 1 "Normal stooling/poo" 2 "Slight stooling/poo problems" 3 "Moderate stooling/poo problems" 4 "Severe stooling/poo problems" 
+lab val m5_baby1_stool m5_baby2_stool m5_baby3_stool m5_stool
+
+label define m5_mood 1 "Happy/content" 2 "Fussy/irritable" 3 "Crying" 4 "Inconsolable crying" 
+lab val m5_baby1_mood m5_baby2_mood m5_baby3_mood m5_mood
+
+label define m5_skin 1 "Normal skin" 2 "Dry or red skin" 3 "Irritated or itchy skin" 4 "Bleeding or cracked skin"
+lab val m5_baby1_skin m5_baby2_skin m5_baby3_skin m5_skin
+
+label define m5_interactivity 1 "Highly playful/interactive" 2 "Playful/interactive" 3 "Less playful/less interactive" 4 "Low energy/inactive/dull"
+lab val m5_baby1_interactivity m5_baby2_interactivity m5_baby3_interactivity m5_interactivity
+
+label define m5_causedeath 0 "Not told anything" 1 "The baby was premature (born too early)" 2 "A birth injury or asphyxia (occurring because of delivery complications)" 3 "A congenital abnormality (genetic or acquired issues with growth/ development)" 4 "Malaria" 5 "An acute respiratory infection" 6 "Diarrhea" 7 "Another type of infection" 8 "Severe acute malnutrition" 9 "An accident or injury" 96 "Another cause, (Specify)" 
+lab val m5_baby1_death_cause m5_baby2_death_cause m5_baby3_death_cause m5_causedeath
+
+label define m5_deathloc 1 "In a health facility" 2 "On the way to the health facility" 3 "Your house or someone elses house" 96 "Other, please specify" 98 "DK" 99 "NR/RF" 
+lab val m5_baby1_deathloc m5_baby2_deathloc m5_baby3_deathloc m5_deathloc
+
+label define m5_mobility 1 "I have no problems in walking about" 2 "I have some problems in walking about" 3 "I am confined to bed" 99 "NR/RF"
+lab val m5_health_a m5_mobility
+
+label define m5_washing 1 "I have no problems with washing or dressing myself" 2 "I have some problems washing or dressing myself" 3 "I am unable to wash or dress myself" 99 "NR/RF" 
+lab val m5_health_b m5_washing
+
+label define m5_activity 1 "I have no problems with performing my usual activities" 2 "I have some problems with performing my usual activities" 3 "I am unable to perform my usual activities" 99 "NR/RF" 
+lab val m5_health_c m5_activity
+
+label define m5_pain_discomf 1 "I have no pain or discomfort" 2 "I have moderate pain or discomfort" 3 "I have extreme pain or discomfort" 99 "NR/RF" 
+lab val m5_health_d m5_pain_discomf 
+
+label define m5_mentalhealth 1 "I am not anxious or depressed" 2 "I am moderately anxious or depressed" 3 "I am extremely anxious or depressed" 4 "NR/RF" 
+lab val m5_health_e m5_mentalhealth
+
+label define m5_phq9 0 "None of the days" 1 "Several days" 2 "More than half the days (>7)" 3 "Nearly every day" 99 "NR/RF" 
+label val m5_depression_a m5_depression_b m5_depression_c m5_depression_d m5_depression_e m5_depression_f ///
+	  m5_depression_g m5_depression_h m5_depression_i m5_phq9
+	
+label define m5_affecthealth_scale  0 "Have not had pain" 1 "Not at all" 2 "A little bit" 3 "SomWhat" 4 "Quite a bit" 5 "Very much" 98 "DK/N/A" 99 "NR/RF" 
+lab val m5_affecthealth_scale m5_affecthealth_scale 
+
+label define m5_endorse 1 "Very much" 2 "A lot" 3 "A little" 4 "Not at all" 99 "NR/RF" 
+lab val m5_feeling_a m5_feeling_b m5_feeling_c m5_feeling_d m5_feeling_e m5_feeling_f m5_feeling_g ///
+		m5_feeling_h m5_endorse
+
+label define m5_pain 0 "Have not had sex" 1 "Not at all" 2 "A little bit" 3 "SomWhat" 4 "Quite a bit" 5 "Very much" 98 "DK" 99 "NR/RF" 
+lab val m5_pain m5_pain
+
+label define m5_leakage_affect 0 "Never" 1 "Less than once per month" 2 "Less than once per week & greater than once per month" 3 "Less than once per day & greater than once per month" 4 "Once a day or more than/ once a day" 98 "DK" 99 "NR/RF"
+label val m5_leakage_affect m5_leakage_affect
+
+label define m5_leakage_txeffect 1 "YES, NO MORE LEAKAGE AT ALL" 2 "YES, BUT STILL SOME LEAKAGE" 3 "NO, STILL HAVE PROBLEM" 99 "NR/RF" 
+lab val m5_leakage_txeffect m5_leakage_txeffect
+
+label define m5_402 1 "On the whole, the system works pretty well, and only minor changes are necessary to make it work better" 2 "There are some good things in our health care system, but major changes are needed to make it work better" 3 "Our health care system has so much wrong with it that we need to completely rebuild it" 98 "DK" 99 "NR/RF" 
+lab val m5_402 m5_402
+
+label define m5_consultations 1 "One" 2 "Two" 3 "Three" 
+lab val m5_502 m5_consultations
+
+label define m5_consultations_loc 1 "In your home" 2 "Someone elses home" 3 "Government hospital" 4 "Government health center" 5 "Government health post" 6 "NGO or faith-based health facility" 7 "Private hospital" 8 "Private specialty maternity center" 9 "Private specialty maternity clinic" 10 "Private clinic" 11 "Another private medical facility (including pharmacy, shop, traditional healer)" 98 "DK" 99 "NR/RF" 
+lab val m5_503_1 m5_503_2 m5_503_3 m5_consultations_loc
+
+label define m5_consultations_fac 1 "Meki Catholic Primary Clinic" 2 "Bote Health Center" 3 "Meki Health Center" 4 "Adami Tulu Health Center" 5 "Bulbula Health Center" 6 "Dubisa Health Center" 7 "Olenchiti Primary Hospital" 8 "Awash Malkasa Health Center" 9 "koka Health Center" 10 "Biyo Health Center" 11 "Ejersa Health Center" 12 "Catholic Church Primary Clinic" 13 "Noh Primary Clinic" 14 "Adama Health Center" 15 "Family Guidance Nazret Specialty Clinic" 16 "Biftu" 17 "Bokushenen" 18 "Adama Teaching Hospital" 19 "Hawas" 20 "Medhanialem Hospital" 21 "Sister Aklisiya Hospital" 22 "Marie stopes Specialty Clinic" 23 "Other in East Shewa or Adama, Specify" 96 "Other outside of the zone" 
+lab val m5_504a_1 m5_504a_2 m5_504a_3 m5_consultations_fac
+
+label define m5_904 1 "At home" 2 "At a facility" 3 "At another location" 
+lab val m5_904 m5_904 
+
+label define m5_violence 1 "Current husband" 2 "Mother; Father" 3 "Step-mother" 4 "Step-father" 5 "Sister" 6 "Brother" 7 "Daughter" 8 "Son" 9 "Late /last / ex-husband/partner" 10 "Current boyfriend" 11 "Former boyfriend" 12 "Mother-in-law;/Father-in-law" 13 "Other female relative/in-law" 14 "Other male relative/in-law" 15 "Female friend /acquaintance" 16 "Male friend/acquaintance" 17 "Teacher" 18 "Employer" 19 "Stranger" 96 "Other (specify)" 98 "DK" 99 "NR/RF" 
+lab val m5_1102 m5_1104 m5_violence
+
+label define m5_satisfaction 1 "Very satisfied" 2 "Satisfied" 3 "Neither satisfied nor dissatisfied" 4 "Dissatisfied" 5 "Very dissatisfied" 98 "DK" 99 "NR" 
+lab val m5_1201 m5_satisfaction
+
+label define m5_complete 0 "Incomplete" 1 "Unverified" 2 "Complete" 
+lab val m5_complete m5_complete
+
+*Formatting M5 dates/times 
+		
+		*Date of M5
+		gen _m5_date_ = date(m5_date,"YMD")
+		char _m5_date_[Original_ET_Varname]  `m5_date[Original_ET_Varname]'
+
+		drop m5_date
+		rename _m5_date_ m5_date
+		format m5_date %td
+		
+		encode q103_m5, gen(m5_starttime)
+		char m5_starttime[Original_ET_Varname]  `q103_m5[Original_ET_Varname]'
+
+		drop q103_m5
+		
+		*data cleaning (SS 7-29):
+		replace m5_date = date("2023-12-28", "YMD") if respondentid=="30103" // corrected interview date
+		replace m5_date = date("2023-12-28", "YMD") if respondentid=="30134" // corrected interview date
+		
+		* M5 Date of maternal death	
+		gen _m5_date_of_maternal_death_ = date(m5_date_of_maternal_death,"YMD")
+		char _m5_date_of_maternal_death_[Original_ET_Varname]  `m5_date_of_maternal_death[Original_ET_Varname]'
+
+		drop m5_date_of_maternal_death
+		rename _m5_date_of_maternal_death_ m5_date_of_maternal_death
+		format m5_date_of_maternal_death %td
+		
+		* M5 Baby death dates
+		gen _m5_baby1_death_date_ = date(m5_baby1_death_date,"YMD")
+		char _m5_baby1_death_date_[Original_ET_Varname]  `m5_baby1_death_date[Original_ET_Varname]'
+
+		drop m5_baby1_death_date
+		rename _m5_baby1_death_date_ m5_baby1_death_date
+		format m5_baby1_death_date %td
+		 
+		
+		
+		/*
+		gen _m5_baby2_death_date_ = date(m5_baby2_death_date,"YMD")
+		drop m5_baby2_death_date
+		rename _m5_baby2_death_date_ m5_baby2_death_date
+		format m5_baby2_death_date %td
+		
+		
+		gen _m5_baby3_death_date_ = date(m5_baby3_death_date,"YMD")
+		drop m5_baby3_death_date
+		rename _m5_baby3_death_date_ m5_baby3_death_date
+		format m5_baby3_death_date %td */
+		
+		
 	
 *===============================================================================
 		
@@ -2510,23 +2989,32 @@ label values m4_complete m4_complete
 	recode m1_401 m1_404 m1_501 m1_506 m1_507 m1_509b m1_510b m1_511 m1_512 m1_700 m1_701 m1_702 m1_703 m1_704 m1_705 m1_706 m1_707 m1_708a m1_708b m1_708c m1_708d m1_708e m1_708f m1_709a m1_709b m1_710a m1_710b m1_710c m1_711a m1_711b m1_712 m1_713a m1_713b m1_713c m1_713d m1_713e m1_713f m1_713g m1_713h m1_713i m1_714a m1_714b m1_716a m1_716b m1_716c m1_716d m1_716e m1_717 m1_718 m1_719 m1_720 m1_721 m1_722 m1_723 m1_724a m1_724c m1_724d m1_724e m1_724f m1_724g m1_724h m1_724i m1_801 m1_803 m1_805 m1_806 m1_807 m1_809 m1_810a m1_810b m1_811 m1_812a m1_813a m1_813b m1_813c m1_813d m1_813e m1_8a_et m1_8b_et m1_8c_et m1_8d_et m1_8e_et m1_8f_et m1_8g_et m1_2_8_et m1_814a m1_814b m1_814c m1_814d m1_814e m1_814f m1_814g m1_814h m1_814i m1_816 m1_901 m1_902 m1_903 m1_904 m1_905 m1_907 m1_1004 m1_1005 m1_1006 m1_1_10_et m1_1007 m1_1008 m1_1010 m1_1011a m1_1011b m1_1011c m1_1011d m1_1011e m1_1011f m1_1101 m1_1105 m1_1201 m1_1202 m1_1203 m1_1204 m1_1205 m1_1206 m1_1207 m1_1208 m1_1209 m1_1210 m1_1211 m1_1212 m1_1213 m1_1214 m1_1215 m1_1216 m1_1218a m1_1218b m1_1218c m1_1218d m1_1218e m1_1218f m1_1221 m1_1223 m1_804 (98 = .d)
 
 	** MODULE 2:
-	recode m2_301 m2_203a m2_203b m2_203c m2_203d m2_203e m2_203f m2_203g m2_203h m2_203i m2_204a_et m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et m2_204g_et m2_204h_et m2_204i m2_205c m2_205d m2_205e m2_205f m2_205g m2_205h m2_205i m2_206 m2_207 m2_208 m2_301 m2_303a m2_303b m2_303c m2_303d m2_303e m2_305 m2_306 m2_308 m2_309 m2_311 m2_312 m2_314 m2_315 m2_317 m2_318 m2_321 m2_401 m2_402 m2_403 m2_404 m2_405 m2_501a m2_501b m2_501c m2_501d m2_501e m2_501f m2_501g m2_502 m2_503a m2_503b m2_503c m2_503d m2_503e m2_503f m2_504 m2_505a m2_505b m2_505c m2_505d m2_505e m2_505f m2_506a m2_506b m2_506c m2_506d m2_507 m2_508a m2_508b_number m2_508c m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_602a m2_603 m2_604 m2_701 m2_702a m2_702b m2_702c m2_702d m2_702e m2_704 (99 = .r)
+	recode m2_301 m2_203a m2_203b m2_203c m2_203d m2_203e m2_203f m2_203g m2_203h m2_203i m2_204a_et m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et m2_204g_et m2_204h_et m2_204i m2_205c m2_205d m2_205e m2_205f m2_205g m2_205h m2_205i m2_206 m2_207 m2_208 m2_301 m2_303a m2_303b m2_303c m2_303d m2_303e m2_305 m2_306 m2_308 m2_309 m2_311 m2_312 m2_314 m2_315 m2_317 m2_318 m2_321 m2_401 m2_402 m2_403 m2_404 m2_405 m2_501a m2_501b m2_501c m2_501d m2_501e m2_501f m2_501g m2_502 m2_503a m2_503b m2_503c m2_503d m2_503e m2_503f m2_504 m2_505a m2_505b m2_505c m2_505d m2_505e m2_505f m2_506a m2_506b m2_506c m2_506d m2_507 m2_508a m2_508b_yn m2_508c_yn m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_602a m2_603 m2_604 m2_701 m2_702a m2_702b m2_702c m2_702d m2_702e m2_704 (99 = .r)
 	
-	recode m2_201 m2_203a m2_203b m2_203c m2_203d m2_203e m2_203f m2_203g m2_203h m2_203i m2_204a_et m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et m2_204g_et m2_204h_et m2_204i m2_206 m2_207 m2_208 m2_301 m2_303a m2_303b m2_303c m2_303d m2_303e m2_305 m2_306 m2_308 m2_309 m2_311 m2_312 m2_314 m2_315 m2_317 m2_318 m2_321 m2_401 m2_402 m2_403 m2_404 m2_405 m2_501a m2_501b m2_501c m2_501d m2_501e m2_501f m2_501g m2_502 m2_503a m2_503b m2_503c m2_503d m2_503e m2_503f m2_504 m2_505a m2_505b m2_505c m2_505d m2_505e m2_505f m2_506a m2_506b m2_506c m2_506d m2_507 m2_508a m2_508b_number m2_508c m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_602a m2_603 m2_604 m2_701 m2_702a m2_702b m2_702c m2_702d m2_702e m2_704 kebele_malaria kebele_intworm (98 = .d)
+	recode m2_201 m2_203a m2_203b m2_203c m2_203d m2_203e m2_203f m2_203g m2_203h m2_203i m2_204a_et m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et m2_204g_et m2_204h_et m2_204i m2_206 m2_207 m2_208 m2_301 m2_303a m2_303b m2_303c m2_303d m2_303e m2_305 m2_306 m2_308 m2_309 m2_311 m2_312 m2_314 m2_315 m2_317 m2_318 m2_321 m2_401 m2_402 m2_403 m2_404 m2_405 m2_501a m2_501b m2_501c m2_501d m2_501e m2_501f m2_501g m2_502 m2_503a m2_503b m2_503c m2_503d m2_503e m2_503f m2_504 m2_505a m2_505b m2_505c m2_505d m2_505e m2_505f m2_506a m2_506b m2_506c m2_506d m2_507 m2_508a m2_508b_yn m2_508c_yn m2_509a m2_509b m2_509c m2_601a m2_601b m2_601c m2_601d m2_601e m2_601f m2_601g m2_601h m2_601i m2_601j m2_601k m2_601l m2_601m m2_601n m2_602a m2_603 m2_604 m2_701 m2_702a m2_702b m2_702c m2_702d m2_702e m2_704 kebele_malaria kebele_intworm m3_1102_total (98 = .d)
 
 	** MODULE 3:
 	recode m3_303a m3_303b m3_303c m3_303d m3_baby1_gender m3_baby2_gender m3_baby3_gender m3_baby1_health m3_baby2_health m3_baby3_health m3_breastfeeding m3_505a m3_517 m3_1201 m3_1202 m3_1203 m3_1204 m3_401 m3_consultation_1 m3_consultation_referral_1 m3_consultation_2 m3_consultation_referral_2 m3_consultation_3 m3_consultation_referral_3 m3_consultation_4 m3_consultation_referral_4 m3_consultation_5 m3_consultation_referral_5 m3_412a m3_412b m3_412c m3_412d m3_412e m3_412f m3_412g m3_501 m3_510 m3_601a m3_601b m3_601c m3_602b m3_603a m3_603b m3_603c m3_603d m3_604b m3_605a m3_605b m3_606 m3_607 m3_607a_et m3_607b_et m3_607c_et m3_607d_et m3_607e_et m3_608 m3_609 m3_610a m3_610b m3_611 m3_613 m3_615a m3_615b m3_615c m3_617a m3_617b m3_617c m3_617d_et m3_617e_et m3_617f_et m3_617g_et m3_617h_et m3_617i_et m3_619a m3_619b m3_619c m3_619d m3_619e m3_619f m3_619g m3_619h m3_619i m3_619j m3_620 m3_621b m3_622a m3_622c m3_701 m3_703 m3_704a m3_704b m3_704c m3_704d m3_704e m3_704f m3_704g m3_705 m3_706 m3_710a m3_710b m3_710c m3_802a m3_803a m3_803b m3_803c m3_803d m3_803e m3_803f m3_803g m3_803h m3_803i m3_805 m3_901a m3_901b m3_901c m3_901d m3_901e m3_901f m3_901g m3_901h m3_901i m3_901j m3_901k m3_901l m3_901m m3_901n m3_901o m3_901p m3_901q m3_901r m3_902a_baby1 m3_902a_baby2 m3_902a_baby3 m3_902b_baby1 m3_902b_baby2 m3_902b_baby3 m3_902c_baby1 m3_902c_baby2 m3_902c_baby3 m3_902d_baby1 m3_902d_baby2 m3_902d_baby3 m3_902e_baby1 m3_902e_baby2 m3_902e_baby3 m3_902f_baby1 m3_902f_baby2 m3_902f_baby3 m3_902g_baby1 m3_902g_baby2 m3_902g_baby3 m3_902h_baby1 m3_902h_baby2 m3_902h_baby3 m3_902i_baby1 m3_902i_baby2 m3_902i_baby3 m3_902j_baby1 m3_902j_baby2 m3_902j_baby3 m3_1003 m3_1005a m3_1005b m3_1005c m3_1005d m3_1005e m3_1005f m3_1005g m3_1005h m3_1006a m3_1006b m3_1006c m3_1007a m3_1007b m3_1007c m3_1101 m3_1102a m3_1102b m3_1102c m3_1102d m3_1102e m3_1102f m3_baby1_gender m3_baby2_gender m3_baby3_gender m3_baby1_health m3_baby2_health m3_baby3_health m3_1001 m3_1004a m3_1004b m3_1004c m3_1004d m3_1004e m3_1004f m3_1004g m3_1004h m3_breastfeeding m3_1202 m3_1204 m3_1004i m3_1004j m3_1004k m3_502 m3_503 m3_509 m3_512 m3_513a m3_516 m3_518 m3_519 m3_602a m3_604a m3_621a m3_801a m3_801b m3_807 m3_808b m3_809 m3_1002 m3_1106 (99 = .r)
 	
-	recode m3_303a m3_baby1_weight m3_baby2_weight m3_baby3_weight m3_breastfeeding m3_1201 m3_1202 m3_1203 m3_1204 m3_401 m3_consultation_1 m3_consultation_referral_1 m3_consultation_2 m3_consultation_referral_2 m3_consultation_3 m3_consultation_referral_3 m3_consultation_4 m3_consultation_referral_4 m3_consultation_5 m3_consultation_referral_5 m3_412a m3_412b m3_412c m3_412d m3_412e m3_412f m3_412g m3_501 m3_510 m3_601a m3_601b m3_601c m3_602b m3_603a m3_603b m3_603c m3_603d m3_604b m3_605a m3_605b m3_606 m3_607 m3_607a_et m3_607b_et m3_607c_et m3_607d_et m3_607e_et m3_608 m3_609 m3_610a m3_610b m3_611 m3_613 m3_615a m3_615b m3_615c m3_617a m3_617b m3_617c m3_617d_et m3_617e_et m3_617f_et m3_617g_et m3_617h_et m3_617i_et m3_619a m3_619b m3_619c m3_619d m3_619e m3_619f m3_619g m3_619h m3_619i m3_619j m3_620 m3_621b m3_622a m3_622c m3_701 m3_703 m3_704a m3_704b m3_704c m3_704d m3_704e m3_704f m3_704g m3_705 m3_706 m3_710a m3_710b m3_710c m3_802a m3_803a m3_803b m3_803c m3_803d m3_803e m3_803f m3_803g m3_803h m3_803i m3_805 m3_901a m3_901b m3_901c m3_901d m3_901e m3_901f m3_901g m3_901h m3_901i m3_901j m3_901k m3_901l m3_901m m3_901n m3_901o m3_901p m3_901q m3_901r m3_902a_baby1 m3_902a_baby2 m3_902a_baby3 m3_902b_baby1 m3_902b_baby2 m3_902b_baby3 m3_902c_baby1 m3_902c_baby2 m3_902c_baby3 m3_902d_baby1 m3_902d_baby2 m3_902d_baby3 m3_902e_baby1 m3_902e_baby2 m3_902e_baby3 m3_902f_baby1 m3_902f_baby2 m3_902f_baby3 m3_902g_baby1 m3_902g_baby2 m3_902g_baby3 m3_902h_baby1 m3_902h_baby2 m3_902h_baby3 m3_902i_baby1 m3_902i_baby2 m3_902i_baby3 m3_902j_baby1 m3_902j_baby2 m3_902j_baby3 m3_1003 m3_1005a m3_1005b m3_1005c m3_1005d m3_1005e m3_1005f m3_1005g m3_1005h m3_1006a m3_1006b m3_1006c m3_1007a m3_1007b m3_1007c m3_1101 m3_1102a m3_1102b m3_1102c m3_1102d m3_1102e m3_1102f m3_1202 m3_1204 m3_1004i m3_1004j m3_1004k m3_502 m3_503 m3_512 m3_513a m3_518 m3_519 m3_602a m3_604a m3_801a m3_801b m3_809 m3_1002 m3_1106 recm3_506b recm3_507 m3_514_unknown recm3_520 (98 = .d)
+	recode m3_303a m3_baby1_weight m3_baby2_weight m3_baby3_weight m3_breastfeeding m3_1201 m3_1202 m3_1203 m3_1204 m3_401 m3_consultation_1 m3_consultation_referral_1 m3_consultation_2 m3_consultation_referral_2 m3_consultation_3 m3_consultation_referral_3 m3_consultation_4 m3_consultation_referral_4 m3_consultation_5 m3_consultation_referral_5 m3_412a m3_412b m3_412c m3_412d m3_412e m3_412f m3_412g m3_501 m3_510 m3_601a m3_601b m3_601c m3_602b m3_603a m3_603b m3_603c m3_603d m3_604b m3_605a m3_605b m3_606 m3_607 m3_607a_et m3_607b_et m3_607c_et m3_607d_et m3_607e_et m3_608 m3_609 m3_610a m3_610b m3_611 m3_613 m3_615a m3_615b m3_615c m3_617a m3_617b m3_617c m3_617d_et m3_617e_et m3_617f_et m3_617g_et m3_617h_et m3_617i_et m3_619a m3_619b m3_619c m3_619d m3_619e m3_619f m3_619g m3_619h m3_619i m3_619j m3_620 m3_621b m3_622a m3_622c m3_701 m3_703 m3_704a m3_704b m3_704c m3_704d m3_704e m3_704f m3_704g m3_705 m3_706 m3_710a m3_710b m3_710c m3_802a m3_803a m3_803b m3_803c m3_803d m3_803e m3_803f m3_803g m3_803h m3_803i m3_805 m3_901a m3_901b m3_901c m3_901d m3_901e m3_901f m3_901g m3_901h m3_901i m3_901j m3_901k m3_901l m3_901m m3_901n m3_901o m3_901p m3_901q m3_901r m3_902a_baby1 m3_902a_baby2 m3_902a_baby3 m3_902b_baby1 m3_902b_baby2 m3_902b_baby3 m3_902c_baby1 m3_902c_baby2 m3_902c_baby3 m3_902d_baby1 m3_902d_baby2 m3_902d_baby3 m3_902e_baby1 m3_902e_baby2 m3_902e_baby3 m3_902f_baby1 m3_902f_baby2 m3_902f_baby3 m3_902g_baby1 m3_902g_baby2 m3_902g_baby3 m3_902h_baby1 m3_902h_baby2 m3_902h_baby3 m3_902i_baby1 m3_902i_baby2 m3_902i_baby3 m3_902j_baby1 m3_902j_baby2 m3_902j_baby3 m3_1003 m3_1005a m3_1005b m3_1005c m3_1005d m3_1005e m3_1005f m3_1005g m3_1005h m3_1006a m3_1006b m3_1006c m3_1007a m3_1007b m3_1007c m3_1101 m3_1102a m3_1102b m3_1102c m3_1102d m3_1102e m3_1102f m3_1202 m3_1204 m3_1004i m3_1004j m3_1004k m3_502 m3_503 m3_512 m3_513a m3_518 m3_519 m3_602a m3_604a m3_801a m3_801b m3_809 m3_1002 m3_1106 recm3_506b recm3_507 m3_514_unknown recm3_520 m3_baby1_size (98 = .d)
 	
-	recode recm3_506b recm3_507 m3_514_unknown recm3_520 m3_521 (998 = .d)
+	recode recm3_506b recm3_507 m3_514_unknown recm3_520 m3_521 m3_baby1_weight m3_baby2_weight m3_1102_total (998 = .d) // SS: confirm if .d or unknown (.)
+	
+	recode m3_baby1_weight m3_baby2_weight (999 = .) 
 	
 	** MODULE 4:	
-	recode  m4_108  m4_baby1_health m4_baby2_health  m4_baby3_health m4_204a  m4_baby1_diarrhea m4_baby2_diarrhea m4_baby3_diarrhea m4_baby1_fever m4_baby2_fever m4_baby3_fever m4_baby1_lowtemp m4_baby2_lowtemp m4_baby3_lowtemp m4_baby1_illness m4_baby2_illness m4_baby3_illness m4_baby1_troublebreath m4_baby2_troublebreath m4_baby3_troublebreath m4_baby1_chestprob m4_baby2_chestprob m4_baby3_chestprob  m4_baby1_troublefeed m4_baby2_troublefeed m4_baby3_troublefeed m4_baby1_convulsions m4_baby2_convulsions m4_baby3_convulsions m4_baby1_jaundice m4_baby2_jaundice m4_baby3_jaundice m4_baby1_yellowpalms m4_baby2_yellowpalms m4_baby3_yellowpalms m4_baby1_lethargic m4_baby2_lethargic m4_baby3_lethargic m4_baby1_bulgedfont m4_baby2_bulgedfont m4_baby3_bulgedfont m4_baby1_otherprob m4_baby2_otherprob m4_baby3_otherprob m4_baby2_death_date m4_baby3_death_date m4_210_et m4_baby1_advice m4_baby2_advice m4_baby3_advice m4_baby1_death_loc m4_baby2_death_loc m4_baby3_death_loc (99 = .r )
+	recode m4_108  m4_baby1_health m4_baby2_health  m4_baby3_health m4_204a  m4_baby1_diarrhea m4_baby2_diarrhea m4_baby3_diarrhea m4_baby1_fever m4_baby2_fever m4_baby3_fever m4_baby1_lowtemp m4_baby2_lowtemp m4_baby3_lowtemp m4_baby1_illness m4_baby2_illness m4_baby3_illness m4_baby1_troublebreath m4_baby2_troublebreath m4_baby3_troublebreath m4_baby1_chestprob m4_baby2_chestprob m4_baby3_chestprob  m4_baby1_troublefeed m4_baby2_troublefeed m4_baby3_troublefeed m4_baby1_convulsions m4_baby2_convulsions m4_baby3_convulsions m4_baby1_jaundice m4_baby2_jaundice m4_baby3_jaundice m4_baby1_yellowpalms m4_baby2_yellowpalms m4_baby3_yellowpalms m4_baby1_lethargic m4_baby2_lethargic m4_baby3_lethargic m4_baby1_bulgedfont m4_baby2_bulgedfont m4_baby3_bulgedfont m4_baby1_otherprob m4_baby2_otherprob m4_baby3_otherprob m4_baby2_death_date m4_baby3_death_date m4_210_et m4_baby1_advice m4_baby2_advice m4_baby3_advice m4_baby1_death_loc m4_baby2_death_loc m4_baby3_death_loc (99 = .r )
  
 	recode m4_108 m4_204a m4_baby1_diarrhea m4_baby2_diarrhea m4_baby3_diarrhea m4_baby1_fever m4_baby2_fever m4_baby3_fever m4_baby1_lowtemp m4_baby2_lowtemp m4_baby3_lowtemp m4_baby1_illness m4_baby2_illness m4_baby3_illness m4_baby1_troublebreath m4_baby2_troublebreath m4_baby3_troublebreath m4_baby1_chestprob m4_baby2_chestprob m4_baby3_chestprob  m4_baby1_troublefeed m4_baby2_troublefeed m4_baby3_troublefeed m4_baby1_convulsions m4_baby2_convulsions m4_baby3_convulsions m4_baby1_jaundice m4_baby2_jaundice m4_baby3_jaundice m4_baby1_yellowpalms m4_baby2_yellowpalms m4_baby3_yellowpalms m4_baby1_lethargic m4_baby2_lethargic m4_baby3_lethargic m4_baby1_bulgedfont m4_baby2_bulgedfont m4_baby3_bulgedfont m4_baby1_otherprob m4_baby2_otherprob m4_baby3_otherprob m4_baby2_death_date m4_baby3_death_date m4_210_et m4_baby1_advice m4_baby2_advice m4_baby3_advice m4_baby1_death_loc m4_baby2_death_loc m4_baby3_death_loc (98 = .d)
 
-************** Recode missing values to NA for questions respondents would not have been asked due to skip patterns:
+	** MODULE 5:
+	recode m5_baby1_health m5_baby2_health m5_baby3_health m5_breastfeeding m5_baby1_issues_a m5_baby2_issues_a m5_baby3_issues_a m5_baby1_issues_b m5_baby2_issues_b m5_baby3_issues_b m5_baby1_issues_c m5_baby2_issues_c m5_baby3_issues_c m5_baby1_issues_d m5_baby2_issues_d m5_baby3_issues_d m5_baby1_issues_e m5_baby2_issues_e m5_baby3_issues_e m5_baby1_issues_f m5_baby2_issues_f m5_baby3_issues_f m5_baby1_issues_g m5_baby2_issues_g m5_baby3_issues_g m5_baby1_issues_h m5_baby2_issues_h m5_baby3_issues_h m5_baby1_issues_i m5_baby2_issues_i m5_baby3_issues_i m5_baby2_issues_j m5_baby3_issues_j m5_baby1_issues_k m5_baby2_issues_k m5_baby3_issues_k m5_baby1_issues_l m5_baby2_issues_l m5_baby3_issues_l m5_baby2_issues_oth m5_baby3_issues_oth m5_baby2_death m5_baby3_death m5_baby1_advice m5_baby2_advice m5_baby3_advice m5_baby1_deathloc m5_baby2_deathloc m5_baby3_deathloc m5_health m5_health_a m5_health_b m5_health_c m5_health_d m5_health_e  m5_depression_a m5_depression_b m5_depression_c m5_depression_d m5_depression_e m5_depression_f m5_depression_g m5_depression_h m5_depression_i m5_affecthealth_scale m5_feeling_a m5_feeling_b m5_feeling_c m5_feeling_d m5_feeling_e m5_feeling_f m5_feeling_g m5_feeling_h m5_pain m5_leakage_affect m5_leakage_tx m5_leakage_txeffect m5_401 m5_402 m5_403 m5_404 m5_405a m5_405b m5_406a m5_406b m5_501a m5_501b m5_503_1 m5_503_2 m5_503_3 m5_505_1 m5_505_2 m5_505_3 m5_consultation1_carequality m5_consultation2_carequality m5_consultation3_carequality m5_701a m5_701b m5_701c m5_701d m5_701e m5_701f m5_701g m5_701h m5_701i m5_702a m5_702b m5_702c m5_702d m5_702e m5_702f m5_702g m5_801a m5_801b m5_801c m5_801d m5_801e m5_801f m5_801g m5_801h m5_802 m5_803a m5_803b m5_803c m5_803d m5_803e m5_803f m5_803g m5_804a m5_901a m5_901b m5_901c m5_901d m5_901e m5_901f m5_901g m5_901h m5_901i m5_901j m5_901k m5_901l m5_901m m5_901n m5_901o m5_901p m5_901q m5_901r m5_901s m5_902b m5_902c m5_902d m5_902f m5_902h m5_902i m5_902j m5_902k m5_902l m5_902m m5_903a m5_903b m5_903c m5_903d m5_903e m5_903f m5_903_other m5_1001 m5_1002a_yn m5_1002b_yn m5_1002c_yn m5_1002d_yn m5_1002e_yn m5_1101 m5_1102 m5_1103 m5_1104 m5_1105 m5_1201 m5_muac (99 = .r)
+	
+	recode m5_breastfeeding m5_baby1_issues_a m5_baby2_issues_a m5_baby3_issues_a m5_baby1_issues_b m5_baby2_issues_b m5_baby3_issues_b m5_baby1_issues_c m5_baby2_issues_c m5_baby3_issues_c m5_baby1_issues_d m5_baby2_issues_d m5_baby3_issues_d m5_baby1_issues_e m5_baby2_issues_e m5_baby3_issues_e m5_baby1_issues_f m5_baby2_issues_f m5_baby3_issues_f m5_baby1_issues_g m5_baby2_issues_g m5_baby3_issues_g m5_baby1_issues_h m5_baby2_issues_h m5_baby3_issues_h m5_baby1_issues_i m5_baby2_issues_i m5_baby3_issues_i m5_baby2_issues_j m5_baby3_issues_j m5_baby1_issues_k m5_baby2_issues_k m5_baby3_issues_k m5_baby1_issues_l m5_baby2_issues_l m5_baby3_issues_l m5_baby2_issues_oth m5_baby3_issues_oth m5_baby2_death m5_baby3_death m5_baby1_advice m5_baby2_advice m5_baby3_advice m5_baby1_deathloc m5_baby2_deathloc m5_baby3_deathloc m5_health m5_affecthealth_scale m5_pain m5_leakage_affect m5_401 m5_402 m5_403 m5_404 m5_405a m5_405b m5_406a m5_406b m5_501a m5_501b m5_503_1 m5_503_2 m5_503_3 m5_505_1 m5_505_2 m5_505_3 m5_701a m5_701b m5_701c m5_701d m5_701e m5_701f m5_701g m5_701h m5_701i m5_702a m5_702b m5_702c m5_702d m5_702e m5_702f m5_702g m5_801a m5_801b m5_801c m5_801d m5_801e m5_801f m5_801g m5_801h m5_802 m5_803a m5_803b m5_803c m5_803d m5_803e m5_803f m5_803g m5_804a m5_901a m5_901b m5_901c m5_901d m5_901e m5_901f m5_901g m5_901h m5_901i m5_901j m5_901k m5_901l m5_901m m5_901n m5_901o m5_901p m5_901q m5_901r m5_901s m5_902b m5_902c m5_902d m5_902f m5_902h m5_902i m5_902j m5_902k m5_902l m5_902m m5_903a m5_903b m5_903c m5_903d m5_903e m5_903f m5_903_other m5_1001 m5_1002a_yn m5_1002b_yn m5_1002c_yn m5_1002d_yn m5_1002e_yn m5_1102 m5_1104 m5_1105 m5_1201 m5_feed_freq_et m5_feed_freq_et m5_feed_freq_et_unk (98 = .d)
+	
+	recode m5_feed_freq_et m5_feed_freq_et m5_feed_freq_et_unk m5_504a_1 m5_504a_2 m5_504a_3 (998 = .)
+		
+************ Recode missing values to NA for questions respondents would not have been asked due to skip patterns:
 
 * MODULE 1:
 * Kept these recode commands here even though everyone has given permission 
@@ -2632,37 +3120,37 @@ recode m1_808_99_et (0 = .a) if m1_804 == 1 | m1_804 == . | m1_804 == .a | m1_80
 * SS: Fix in redcap to add this skip pattern
 recode m1_812b_0_et (. = .a) (0 = .a) if m1_812a == 0 | m1_812a ==. | m1_812a == .d 
 
-recode m1_812b_1 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_1 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_1 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_2 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_2 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_2 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_3 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_3 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_3 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_4 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_4 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_4 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_5 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_5 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_5 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_96 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_96 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_96 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_98 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_98 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_98 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_99 (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_99 (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_99 (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_998_et (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_998_et (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_998_et (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_999_et (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_999_et (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_999_et (0 = .) if m1_812b_0_et == 0
 
-recode m1_812b_888_et (0 = .a) if m1_812b_0_et == 1 | m1_812b_0_et == 98 | m1_812b_0_et == 99
+recode m1_812b_888_et (0 = .a) if m1_812b_0_et !=0
 recode m1_812b_888_et (0 = .) if m1_812b_0_et == 0
 
 replace m1_812b_other = ".a" if m1_812b_96 !=1
@@ -3022,9 +3510,9 @@ recode m2_203a m2_203b m2_203c m2_203d m2_203e ///
 	   m2_204b_et m2_204c_et m2_204d_et m2_204e_et m2_204f_et ///
 	   m2_204g_et m2_204h_et m2_204i m2_205a m2_205b ///
 	   m2_205c m2_205d m2_205e m2_205f m2_205g ///
-	   m2_205h m2_205i m2_206 m2_207 m2_208 m2_301 (. = .a) if m2_202 == 0
+	   m2_205h m2_205i m2_206 m2_207 m2_208 m2_301 (. = .a) if m2_202 !=1
 
-recode m2_302 (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_302 (. = .a) if m2_301 !=1
 
 recode m2_303a (. = .a) if m2_302 == . | m2_302 == .a
 
@@ -3048,306 +3536,312 @@ recode m2_304e (. = .a) if m2_302 == . | m2_302 == 1 | m2_302 == 2 | m2_302 == 3
 
 recode m2_305 (. = .a) if m2_302 == . | m2_302 == .a
 
-recode m2_306 (. = .a) if m2_305 == 1 | m2_305 == 98 | m2_305 == 99
+recode m2_306 (. = .a) if m2_305 !=0
 
-recode m2_307_1 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
+recode m2_307_1 (0 = .a) if m2_306 !=0
 recode m2_307_1 (0 = .) if m2_306 == 0
 
-recode m2_307_2 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
+recode m2_307_2 (0 = .a) if m2_306 !=0
 recode m2_307_2 (0 = .) if m2_306 == 0
 
-recode m2_307_3 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
+recode m2_307_3 (0 = .a) if m2_306 !=0
 recode m2_307_3 (0 = .) if m2_306 == 0
 
-recode m2_307_4 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
+recode m2_307_4 (0 = .a) if m2_306 !=0
 recode m2_307_4 (0 = .) if m2_306 == 0
 
-recode m2_307_5 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
+recode m2_307_5 (0 = .a) if m2_306 !=0
 recode m2_307_5 (0 = .) if m2_306 == 0
 
-recode m2_307_96 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
+recode m2_307_96 (0 = .a) if m2_306 !=0
 recode m2_307_96 (0 = .) if m2_306 == 0
 
-replace m2_307_other = ".a" if m2_307_96 ==1
+replace m2_307_other = ".a" if m2_307_96 !=1
 
 recode m2_308 (. = .a) if m2_302 == 1 | m2_302 == . | m2_302 == .a
 
-recode m2_309 (. = .a) if m2_308 == 1 | m2_308 == 98 | m2_308 == 99
+recode m2_309 (. = .a) if m2_308 !=0
 
-recode m2_310_1 (0 = .a) if m2_306 == 1 | m2_306 == 98 | m2_306 == 99
-recode m2_310_1 (0 = .) if m2_306 == 0
+recode m2_310_1 (0 = .a) if m2_309 !=0
+recode m2_310_1 (0 = .) if m2_309 == 0
 
-recode m2_310_2 (0 = .a) if m2_309 == 1 | m2_309 == 98 | m2_309 == 99
+recode m2_310_2 (0 = .a) if m2_309 !=0
 recode m2_310_2 (0 = .) if m2_309 == 0
 
-recode m2_310_3 (0 = .a) if m2_309 == 1 | m2_309 == 98 | m2_309 == 99
+recode m2_310_3 (0 = .a) if m2_309 !=0
 recode m2_310_3 (0 = .) if m2_309 == 0
 
-recode m2_310_4 (0 = .a) if m2_309 == 1 | m2_309 == 98 | m2_309 == 99
+recode m2_310_4 (0 = .a) if m2_309 !=0
 recode m2_310_4 (0 = .) if m2_309 == 0
 
-recode m2_310_5 (0 = .a) if m2_309 == 1 | m2_309 == 98 | m2_309 == 99
+recode m2_310_5 (0 = .a) if m2_309 !=0
 recode m2_310_5 (0 = .) if m2_309 == 0
 
-recode m2_310_96 (0 = .a) if m2_309 == 1 | m2_309 == 98 | m2_309 == 99
+recode m2_310_96 (0 = .a) if m2_309 !=0
 recode m2_310_96 (0 = .) if m2_309 == 0
 
-replace m2_310_other = ".a" if m2_310_96 ==1
+replace m2_310_other = ".a" if m2_310_96 !=1
 
 recode m2_311 (. = .a) if m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2
 
-recode m2_312 (. = .a) if m2_311 == 1 | m2_311 == 98 | m2_311 == 99
+recode m2_312 (. = .a) if m2_311 !=0
 
-recode m2_313_1 (0 = .a) if m2_312 == 1 | m2_312 == 98 | m2_312 == 99
+recode m2_313_1 (0 = .a) if m2_312 !=0
 recode m2_313_1 (0 = .) if m2_312 == 0
 
-recode m2_313_2 (0 = .a) if m2_312 == 1 | m2_312 == 98 | m2_312 == 99
+recode m2_313_2 (0 = .a) if m2_312 !=0
 recode m2_313_2 (0 = .) if m2_312 == 0
 
-recode m2_313_3 (0 = .a) if m2_312 == 1 | m2_312 == 98 | m2_312 == 99
+recode m2_313_3 (0 = .a) if m2_312 !=0
 recode m2_313_3 (0 = .) if m2_312 == 0
 
-recode m2_313_4 (0 = .a) if m2_312 == 1 | m2_312 == 98 | m2_312 == 99
+recode m2_313_4 (0 = .a) if m2_312 !=0
 recode m2_313_4 (0 = .) if m2_312 == 0
 
-recode m2_313_5 (0 = .a) if m2_312 == 1 | m2_312 == 98 | m2_312 == 99
+recode m2_313_5 (0 = .a) if m2_312 !=0
 recode m2_313_5 (0 = .) if m2_312 == 0
 
-recode m2_313_96 (0 = .a) if m2_312 == 1 | m2_312 == 98 | m2_312 == 99
+recode m2_313_96 (0 = .a) if m2_312 !=0
 recode m2_313_96 (0 = .) if m2_312 == 0
 
-replace m2_313_other = ".a" if m2_313_96 ==1
+replace m2_313_other = ".a" if m2_313_96 !=1
 
-recode m2_314 (. = .a) if m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2 | m2_302 == 3
+recode m2_314 (. = .a) if m2_302 !=4 | m2_302 !=5
 
-recode m2_315 (. = .a) if m2_314 == 1 | m2_314 == 98 | m2_314 == 99
+recode m2_315 (. = .a) if m2_314 !=0
 
-recode m2_316_1 (0 = .a) if m2_315 == 1 | m2_315 == 98 | m2_315 == 99
+recode m2_316_1 (0 = .a) if m2_315 !=0
 recode m2_316_1 (0 = .) if m2_315 == 0
 
-recode m2_316_2 (0 = .a) if m2_315 == 1 | m2_315 == 98 | m2_315 == 99
+recode m2_316_2 (0 = .a) if m2_315 !=0
 recode m2_316_2 (0 = .) if m2_315 == 0
 
-recode m2_316_3 (0 = .a) if m2_315 == 1 | m2_315 == 98 | m2_315 == 99
+recode m2_316_3 (0 = .a) if m2_315 !=0
 recode m2_316_3 (0 = .) if m2_315 == 0
 
-recode m2_316_4 (0 = .a) if m2_315 == 1 | m2_315 == 98 | m2_315 == 99
+recode m2_316_4 (0 = .a) if m2_315 !=0
 recode m2_316_4 (0 = .) if m2_315 == 0
 
-recode m2_316_5 (0 = .a) if m2_315 == 1 | m2_315 == 98 | m2_315 == 99
+recode m2_316_5 (0 = .a) if m2_315 !=0
 recode m2_316_5 (0 = .) if m2_315 == 0
 
-recode m2_316_96 (0 = .a) if m2_315 == 1 | m2_315 == 98 | m2_315 == 99
+recode m2_316_96 (0 = .a) if m2_315 !=0
 recode m2_316_96 (0 = .) if m2_315 == 0
 
-replace m2_316_other = ".a" if m2_316_96 ==1
+replace m2_316_other = ".a" if m2_316_96 !=1
 
-recode m2_317 (. = .a) if m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2 | m2_302 == 3 | m2_302 == 4
-recode m2_318 (. = .a) if m2_317 == 1 | m2_317 == 98 | m2_317 == 99
+recode m2_317 (. = .a) if m2_302 !=5
+recode m2_318 (. = .a) if m2_317 !=0
 
-recode m2_317_1 (0 = .a) if m2_318 == 1 | m2_318 == 98 | m2_318 == 99
-recode m2_317_1 (0 = .) if m2_318 == 0
+recode m2_319_1 (0 = .a) if m2_318 !=0
+recode m2_319_1 (0 = .) if m2_318 == 0
 
-recode m2_317_2 (0 = .a) if m2_318 == 1 | m2_318 == 98 | m2_318 == 99
-recode m2_317_2 (0 = .) if m2_318 == 0
+recode m2_319_2 (0 = .a) if m2_318 !=0
+recode m2_319_2 (0 = .) if m2_318 == 0
 
-recode m2_317_3 (0 = .a) if m2_318 == 1 | m2_318 == 98 | m2_318 == 99
-recode m2_317_3 (0 = .) if m2_318 == 0
+recode m2_319_3 (0 = .a) if m2_318 !=0
+recode m2_319_3 (0 = .) if m2_318 == 0
 
-recode m2_317_4 (0 = .a) if m2_318 == 1 | m2_318 == 98 | m2_318 == 99
-recode m2_317_4 (0 = .) if m2_318 == 0
+recode m2_319_4 (0 = .a) if m2_318 !=0
+recode m2_319_4 (0 = .) if m2_318 == 0
 
-recode m2_317_5 (0 = .a) if m2_318 == 1 | m2_318 == 98 | m2_318 == 99
-recode m2_317_5 (0 = .) if m2_318 == 0
+recode m2_319_5 (0 = .a) if m2_318 !=0
+recode m2_319_5 (0 = .) if m2_318 == 0
 
-recode m2_317_96 (0 = .a) if m2_318 == 1 | m2_318 == 98 | m2_318 == 99
-recode m2_317_96 (0 = .) if m2_318 == 0
+recode m2_319_96 (0 = .a) if m2_318 !=0
+recode m2_319_96 (0 = .) if m2_318 == 0
 
-replace m2_319_other = .a if m2_317_96 == 1
+replace m2_319_other = .a if m2_319_96 != 1
 
-recode m2_320_a (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_a (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_0 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_0 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_b (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_b (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_1 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_1 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_c (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_c (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_2 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_2 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_d (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_d (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_3 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_3 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_e (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_e (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_4 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_4 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_f (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_f (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_5 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_5 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_g (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_g (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_6 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_6 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_h (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_h (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_7 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_7 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_i (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_i (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_8 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_8 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_j (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_j (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_9 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_9 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_k (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_k (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_10 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_10 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_l (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_320_l (0 = .) if m2_202 == 1 & m2_301 == 0
+recode m2_320_11 (0 = .a) if m2_202 !=1 | m2_301 !=0
+recode m2_320_11 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_96 (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_320_96 (0 = .a) if m2_202 !=1 | m2_301 !=0
 recode m2_320_96 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_320_99 (0 = .a) if m2_202 == 0 | m2_202 == 98 | m2_202 == 99 | m2_301 == 1 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_320_99 (0 = .a) if m2_202 !=1 | m2_301 !=0
 recode m2_320_99 (0 = .) if m2_202 == 1 & m2_301 == 0
 
-recode m2_321 (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
+recode m2_321 (. = .a) if m2_202 !=1
                        
-recode m2_401 (. = .a) if (m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a) | (m2_302 == . | m2_302 == .a)
+recode m2_401 (. = .a) if (m2_202 !=1) | (m2_302 == . | m2_302 == .a)
 
-recode m2_402 (. = .a) if (m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a) | (m2_302 == 1 | m2_302 == . | m2_302 == .a)				   
+recode m2_402 (. = .a) if (m2_202 !=1) | (m2_302 == 1 | m2_302 == . | m2_302 == .a)				   
 
-recode m2_403 (. = .a) if (m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a) | (m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2)	
+recode m2_403 (. = .a) if (m2_202 !=1) | (m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2)	
 
-recode m2_404 (. = .a) if (m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a) | (m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2 | m2_302 == 3)			   
-recode m2_405 (. = .a) if (m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a) | (m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2 | m2_302 == 3 | m2_302 == 4)
+recode m2_404 (. = .a) if (m2_202 !=1) | (m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2 | m2_302 == 3)			   
+recode m2_405 (. = .a) if (m2_202 !=1) | (m2_302 == 1 | m2_302 == . | m2_302 == .a | m2_302 == 2 | m2_302 == 3 | m2_302 == 4)
 
-recode m2_501a (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_501b (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_501c (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_501d (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_501e (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_501f (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_501g (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_501a (. = .a) if m2_301 !=1
+recode m2_501b (. = .a) if m2_301 !=1
+recode m2_501c (. = .a) if m2_301 !=1
+recode m2_501d (. = .a) if m2_301 !=1
+recode m2_501e (. = .a) if m2_301 !=1
+recode m2_501f (. = .a) if m2_301 !=1
+recode m2_501g (. = .a) if m2_301 !=1
 
-recode m2_502 (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a | m2_301 == 0 | m2_301 == 98 | m2_301 == 99  | m2_301 == . | m2_301 == .a
+replace m2_501g_other = ".a" if m2_501g !=1
 
-recode m2_503a (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
-recode m2_503b (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
-recode m2_503c (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
-recode m2_503d (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
-recode m2_503e (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
-recode m2_503f (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
-recode m2_504 (. = .a) if m2_502 == 0 | m2_502 == 98 | m2_502 == 99
+recode m2_502 (. = .a) if m2_202 !=1 | m2_301 !=1
 
-recode m2_505a (. = .a) if m2_503a == 0 | m2_503a == 98 | m2_503a == 99
-recode m2_505b (. = .a) if m2_503b == 0 | m2_503b == 98 | m2_503b == 99
-recode m2_506c (. = .a) if m2_503c == 0 | m2_503c == 98 | m2_503c == 99
-recode m2_505d (. = .a) if m2_503d == 0 | m2_503d == 98 | m2_503d == 99
-recode m2_505e (. = .a) if m2_503e == 0 | m2_503e == 98 | m2_503e == 99
-recode m2_505f (. = .a) if m2_503f == 0 | m2_503f == 98 | m2_503f == 99
-*recode m2_505g (. = .a) if m2_504 == 0 | m2_504 == 98 | m2_504 == 99
+recode m2_503a (. = .a) if m2_502 !=1
+recode m2_503b (. = .a) if m2_502 !=1
+recode m2_503c (. = .a) if m2_502 !=1
+recode m2_503d (. = .a) if m2_502 !=1
+recode m2_503e (. = .a) if m2_502 !=1
+recode m2_503f (. = .a) if m2_502 !=1
+recode m2_504 (. = .a) if m2_502 !=1
 
-recode m2_506a (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a | m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+replace m2_504_other = ".a" if m2_504 !=1
 
-recode m2_506b (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a | m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_505a (. = .a) if m2_503a !=1
+recode m2_505b (. = .a) if m2_503b !=1
+recode m2_506c (. = .a) if m2_503c !=1
+recode m2_505d (. = .a) if m2_503d !=1
+recode m2_505e (. = .a) if m2_503e !=1
+recode m2_505f (. = .a) if m2_503f !=1
+replace m2_505g = ".a" if m2_504 !=1
 
-recode m2_506c (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a | m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_506a (. = .a) if m2_202 !=1 | m2_301 !=1
 
-recode m2_506d (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a | m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_506b (. = .a) if m2_202 !=1 | m2_301 !=1
 
-recode m2_507 (. = .a) if m2_203a == 0 & m2_203b == 0 & m2_203c == 0 & m2_203d == 0 & m2_203e == 0 & m2_203f == 0 & m2_203g == 0 & m2_203h == 0 & m2_203i == 0 | m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_506c (. = .a) if m2_202 !=1 | m2_301 !=1
 
-*double check this:
-recode m2_508a (. = .a) if (m2_205a+m2_205b) < 3
+recode m2_506d (. = .a) if m2_202 !=1 | m2_301 !=1
 
-recode m2_508b_number (. = .a) if m2_508a == 0 | m2_508a == 98 | m2_508a == 99  | m2_508a == . | m2_508a == .a 
+recode m2_507 (. = .a) if m2_203a !=1 & m2_203b !=1 & m2_203c !=1 & m2_203d !=1 & m2_203e !=1 & m2_203f !=1 & m2_203g !=1 & m2_203h !=1 & m2_203i !=1 | m2_301 !=1
 
-recode m2_508b_last (. = .a) if m2_508b_number == 0 | m2_508b_number == 98 | m2_508b_number == 99 | m2_508b_number == . | m2_508b_number == .a  
 
-recode m2_508c (. = .a) if m2_508b_number == 0 | m2_508b_number == 98 | m2_508b_number == 99 | m2_508b_number == . | m2_508b_number == .a
+egen m2_phqscore = rowtotal(m2_205a m2_205b)
+recode m2_508a (. = .a) if m2_phqscore <3
+drop m2_phqscore
+
+recode m2_508b_yn (. = .a) if m2_508a !=1
+
+recode m2_508b_num (. = .a) if m2_508b_yn !=1  
+
+recode m2_508c_yn (. = .a) if m2_508b_yn !=1
  
-recode m2_508d (. = .a) if m2_508c == 0 | m2_508c == 98 | m2_508c == 99 | m2_508c == . | m2_508c == .a
+recode m2_508c_time (. = .a) if m2_508c_yn !=1
 
-recode m2_509a (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_509b (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
-recode m2_509c (. = .a) if m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_509a (. = .a) if m2_301 !=1
+recode m2_509b (. = .a) if m2_301 !=1
+recode m2_509c (. = .a) if m2_301 !=1
 
-recode m2_601a (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601b (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601c (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601c (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601d (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601e (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601f (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601g (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601h (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601i (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601j (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601l (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601m (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
-recode m2_601n (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a
+recode m2_601a (. = .a) if m2_202 !=1
+recode m2_601b (. = .a) if m2_202 !=1
+recode m2_601c (. = .a) if m2_202 !=1
+recode m2_601c (. = .a) if m2_202 !=1
+recode m2_601d (. = .a) if m2_202 !=1
+recode m2_601e (. = .a) if m2_202 !=1
+recode m2_601f (. = .a) if m2_202 !=1
+recode m2_601g (. = .a) if m2_202 !=1
+recode m2_601h (. = .a) if m2_202 !=1
+recode m2_601i (. = .a) if m2_202 !=1
+recode m2_601j (. = .a) if m2_202 !=1
+recode m2_601l (. = .a) if m2_202 !=1
+recode m2_601m (. = .a) if m2_202 !=1
+recode m2_601n (. = .a) if m2_202 !=1
 
-recode m2_602a (. = .a) if (m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a )| ///
+recode m2_602a (. = .a) if (m2_202 !=1 )| ///
 						  (m2_601a !=1 & m2_601b !=1 & m2_601c !=1 & m2_601d !=1 & m2_601e !=1 & ///
 						  m2_601f !=1 & m2_601g !=1 & m2_601h !=1 & m2_601i !=1 & m2_601j !=1 & ///
 						  m2_601k !=1 & m2_601l !=1 & m2_601m !=1 & m2_601n !=1)
 						  
-recode m2_602b (. = .a) if m2_602a == 0 | m2_602a == 98 | m2_602a == 99	| m2_602a == . | m2_602a == .a
+recode m2_602b (. = .a) if m2_602a !=1
 
-recode m2_603 (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a 
-recode m2_604 (. = .a) if m2_603 == 2 | m2_603 == 3 | m2_603 == . | m2_603 == .a 
+recode m2_603 (. = .a) if m2_202 !=1 
+recode m2_604 (. = .a) if m2_603 !=1
 			
-recode m2_701 (. = .a) if m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a | m2_301 == 0 | m2_301 == 98 | m2_301 == 99 | m2_301 == . | m2_301 == .a
+recode m2_701 (. = .a) if m2_202 !=1 | m2_301 !=1
 
-recode m2_702a (. = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
-recode m2_702a_other (. = .a) if m2_702a !=1
+recode m2_702a (. = .a) if m2_701 !=1
+recode m2_702a_cost (. = .a) if m2_702a !=1
 
-recode m2_702b (. = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
-recode m2_702b_other (. = .a) if m2_702b !=1
+recode m2_702b (. = .a) if m2_701 !=1
+recode m2_702b_cost (. = .a) if m2_702b !=1
 
-recode m2_702c (. = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
-recode m2_702c_other (. = .a) if m2_702c !=1
+recode m2_702c (. = .a) if m2_701 !=1
+recode m2_702c_cost (. = .a) if m2_702c !=1
 
-recode m2_702d (. = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
-recode m2_702d_other (. = .a) if m2_702d !=1
+recode m2_702d (. = .a) if m2_701 !=1
+recode m2_702d_cost (. = .a) if m2_702d !=1
 
-recode m2_702e (. = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
-recode m2_702e_other (. = .a) if m2_702e !=1
+recode m2_702e (. = .a) if m2_701 !=1
+recode m2_702e_cost (. = .a) if m2_702e !=1
 
 * SS: Ask Kate if we should add 98 into branching logic for 704_other
-recode m2_703 m2_704 (. = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_703 m2_704 (. = .a) if m2_701 !=1
 
-recode m2_704_other (. = .a) if m2_704 != 1 
+recode m2_704_confirm (. = .a) if m2_704 !=0 
 
-recode m2_705_1 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_1 (0 = .a) if m2_701 !=1
 recode m2_705_1 (0 = .) if m2_701 == 1
 
-recode m2_705_2 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_2 (0 = .a) if m2_701 !=1
 recode m2_705_2 (0 = .) if m2_701 == 1
 
-recode m2_705_3 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_3 (0 = .a) if m2_701 !=1
 recode m2_705_3 (0 = .) if m2_701 == 1
 
-recode m2_705_4 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_4 (0 = .a) if m2_701 !=1
 recode m2_705_4 (0 = .) if m2_701 == 1
 
-recode m2_705_5 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_5 (0 = .a) if m2_701 !=1
 recode m2_705_5 (0 = .) if m2_701 == 1
 
-recode m2_705_6 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_6 (0 = .a) if m2_701 !=1
 recode m2_705_6 (0 = .) if m2_701 == 1
 
-recode m2_705_96 (0 = .a) if m2_701 == 0 | m2_701 == 98 | m2_701 == 99 | m2_701 ==. | m2_701 == .a
+recode m2_705_96 (0 = .a) if m2_701 !=1
 recode m2_705_96 (0 = .) if m2_701 == 1
 
-recode m2_interview_inturrupt (. = .a) if m2_permission == 0 | m2_permission == . | m2_permission == .a | m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a 
+recode m2_interview_inturrupt (. = .a) if m2_permission !=1 | m2_202 !=1 
  
-recode m2_interview_restarted (. = .a) if m2_permission == 0 | m2_permission == . | m2_permission == .a | m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a  | m2_interview_inturrupt == 0 | m2_interview_inturrupt == . | m2_interview_inturrupt == .a
+recode m2_interview_restarted (. = .a) if m2_permission !=1 | m2_202 !=1  | m2_interview_inturrupt !=1
 
-recode m2_int_duration (. = .a) if m2_permission == 0 | m2_permission == . | m2_permission == .a | m2_202 == 2 | m2_202 == 3 | m2_202 == . | m2_202 == .a 
+recode m2_int_duration (. = .a) if m2_permission !=1 | m2_202 !=1 
 
 recode m2_endstatus (. = .a) if m2_endtime == ""
 
 * MODULE 3:
 recode m3_permission (. = .a) if m3_start_p1 !=1
-recode m3_date recm3_time m3_birth_or_ended m3_303a m3_ga (. = .a) if m3_permission !=1 // SS 2-21: removed m3_ga1 m3_ga2
+recode m3_date recm3_time m3_birth_or_ended m3_303a (. = .a) if m3_permission !=1 // SS 2-21: removed m3_ga1 m3_ga2
 
 recode m3_303b (. = .a) if m3_303a == . | m3_303a == .a
 recode m3_303c (. = .a) if m3_303a == 1 | m3_303a == . | m3_303a == .a | m3_303a == .d | m3_303a == .r
@@ -3448,7 +3942,9 @@ recode m3_1204 (. = .a) if m3_1203 !=1
 
 recode m3_401 (. = .a) if (m3_303b !=1 & m3_303c !=1 & m3_303d !=1) | m3_202 !=3 | ///
 						  (m3_baby1_born_alive != 1 & m3_baby2_born_alive !=1 & m3_baby3_born_alive !=1)
-
+						  
+replace m3_401 = 0 if redcap_record_id == "1708-36"
+						  
 recode m3_402 (. = .a) if m3_401 !=1 & m3_consultation_3 !=1
 
 recode m3_consultation_1 (. = .a) if m3_402 !=1 & m3_402 !=2 & m3_402 !=3 & m3_402 !=4 & m3_402 !=5
@@ -3512,9 +4008,15 @@ replace m3_412g_other = ".a" if m3_412g !=1
 
 recode m3_501 (. = .a) if (m3_303b !=1 & m3_303c !=1 & m3_303d !=1) & (m3_baby1_born_alive !=1 & m3_baby2_born_alive !=1 & m3_baby3_born_alive !=1) & m3_202 !=3
 
+replace m3_501 = 1 if redcap_record_id == "1708-36"
+
 recode m3_502 m3_503 (. = .a) if m3_501 !=1
 
+replace m3_502 = 1 if redcap_record_id == "1708-36"
+
 replace m3_503_inside_zone_other = ".a" if m3_503 !=96
+
+replace m3_503_inside_zone_other = "Mojo hospital" if redcap_record_id == "1708-36"
 
 replace m3_503_outside_zone_other = ".a" if m3_503 !=97
 
@@ -3539,6 +4041,7 @@ replace m3_509_other = ".a" if m3_509 !=96
 recode m3_510 (. = .a) if m3_501 !=1
 
 recode m3_511 m3_512 (. = .a) if m3_510 !=1
+	replace m3_511 =2 if redcap_record_id=="1686-1" // data entry error
 
 *replace m3_512_outside_zone_other = ".a" if m3_512 !=97 // numeric because of 0 obs
 
@@ -3775,7 +4278,7 @@ recode m3_1102f_amt (. = .a) if m3_1102f !=1
 
 recode m3_1103_confirm (. = .a) if (m3_1103 == . |  m3_1103 == .a)
 
-recode m3_1104 (. = .a) if m3_1103_confirm !=0
+recode m3_1102_total (. = .a) if m3_1103_confirm !=0
 
 replace m3_1105_other = ".a" if m3_1105 !=96
 
@@ -3784,7 +4287,6 @@ recode m3_1106 m3_p2_outcome (. = .a) if m3_permission_p2 !=1
 recode recm3_endtime recm3_duration (. = .a) if m3_permission_p2 !=1 | (m3_303b !=1  & m3_303c !=1 & m3_303d !=1 & m3_202 !=3)
 
 *recode m3_p2_outcome_other (. = .a) if m3_p2_outcome !=96 // numeric because of 0 obs SS fix
-
 *recode m3_p2_date_of_rescheduled recm3_p2_time_of_rescheduled (. = .a) if m3_attempt_outcome_p2 !=6
 
 * MODULE 4:
@@ -3830,6 +4332,7 @@ replace m4_baby1_death_date = ".d" if m4_baby1_death_date_unk==1
 drop m4_baby1_death_date_unk 
 
 gen m4_baby2_death_date_string = string(m4_baby2_death_date)
+char m4_baby2_death_date_string[Original_ET_Varname] `m4_baby2_death_date[Original_ET_Varname]' 
 drop m4_baby2_death_date 
 rename m4_baby2_death_date_string m4_baby2_death_date
 replace m4_baby2_death_date = ".a" if m4_baby2_status==1 | m3_303a==1
@@ -3837,6 +4340,7 @@ replace m4_baby2_death_date = ".d" if m4_baby2_death_date_unk==1
 drop m4_baby2_death_date_unk 
 
 gen m4_baby3_death_date_string = string(m4_baby3_death_date)
+char m4_baby3_death_date_string[Original_ET_Varname] `m4_baby3_death_date[Original_ET_Varname]' 
 drop m4_baby3_death_date
 rename m4_baby3_death_date_string m4_baby3_death_date
 replace m4_baby3_death_date = ".a" if m4_baby3_status==1 | m3_303a==1 | m3_303a==2
@@ -3851,26 +4355,26 @@ recode m4_baby3_210a m4_baby3_210b m4_baby3_210c m4_baby3_210d m4_baby3_210e m4_
 *---------------- Section 3: Health - Woman ----------*
 *recoding of NR/RF to .r
  
-recode m4_301 m4_302a m4_302b m4_303a m4_303b m4_303c m4_303d m4_303e m4_303f m4_303g m4_303h m4_304 m4_309 m4_401a m4_401b  m4_403a m4_403b m4_403c m4_405 m4_407 m4_409 m4_501 m4_502 m4_503 m4_baby1_601a m4_baby2_601a m4_baby3_601a m4_baby1_601b m4_baby2_601b m4_baby3_601b  m4_baby1_601c m4_baby2_601c m4_baby3_601c m4_baby1_601d m4_baby2_601d m4_baby3_601d m4_baby1_601e m4_baby2_601e m4_baby3_601e m4_baby1_601f m4_baby2_601f m4_baby3_601f m4_baby1_601g m4_baby2_601g m4_baby3_601g m4_baby1_601h m4_baby2_601h m4_baby3_601h m4_baby1_601i m4_baby2_601i m4_baby3_601i m4_baby1_618a m4_baby1_618b m4_baby1_618c m4_baby2_618a m4_baby2_618b m4_baby2_618c m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_602a m4_602b m4_602d m4_602e m4_602f m4_602g m4_701a m4_701b m4_701c m4_701d m4_701e m4_701f m4_701g m4_701h m4_702 m4_703a m4_703b m4_703c m4_703d m4_703e m4_703f m4_703g m4_704a m4_801a m4_801b m4_801c m4_801d m4_801e m4_801f m4_801g m4_801h m4_801i m4_801j m4_801k m4_801l m4_801m m4_801n m4_801o m4_801p m4_801q m4_801r  m4_baby1_802a m4_baby2_802a m4_baby3_802a m4_baby1_802b m4_baby2_802b m4_baby3_802b m4_baby1_802c m4_baby2_802c m4_baby3_802c m4_baby1_802d m4_baby2_802d m4_baby3_802d m4_baby1_802e m4_baby2_802e m4_baby3_802e m4_baby1_802f m4_baby2_802f m4_baby3_802f m4_baby1_802g m4_baby2_802g m4_baby3_802g m4_baby1_802h m4_baby2_802h m4_baby3_802h m4_baby1_802i m4_baby2_802i m4_baby3_802i m4_802j_1 m4_802j_2 m4_802j_3 m4_803a_1 m4_803a_2 m4_803a_3 m4_803b_1 m4_803b_2 m4_803b_3 m4_803c_1 m4_803c_2 m4_803c_3 m4_803d_1 m4_803d_2 m4_803d_3 m4_803e_1 m4_803e_2 m4_803e_3 m4_803f_1 m4_803f_2 m4_803f_3 m4_901 m4_902a m4_902b m4_902c m4_902d m4_902e (99 = .r )
+recode m4_301 m4_302a m4_302b m4_303a m4_303b m4_303c m4_303d m4_303e m4_303f m4_303g m4_303h m4_304 m4_309 m4_401a m4_401b  m4_403a m4_403b m4_403c m4_405a m4_405b m4_405c m4_501 m4_502 m4_503 m4_baby1_601a m4_baby2_601a m4_baby3_601a m4_baby1_601b m4_baby2_601b m4_baby3_601b  m4_baby1_601c m4_baby2_601c m4_baby3_601c m4_baby1_601d m4_baby2_601d m4_baby3_601d m4_baby1_601e m4_baby2_601e m4_baby3_601e m4_baby1_601f m4_baby2_601f m4_baby3_601f m4_baby1_601g m4_baby2_601g m4_baby3_601g m4_baby1_601h m4_baby2_601h m4_baby3_601h m4_baby1_601i m4_baby2_601i m4_baby3_601i m4_baby1_618a m4_baby1_618b m4_baby1_618c m4_baby2_618a m4_baby2_618b m4_baby2_618c m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_602a m4_602b m4_602d m4_602e m4_602f m4_602g m4_701a m4_701b m4_701c m4_701d m4_701e m4_701f m4_701g m4_701h m4_702 m4_703a m4_703b m4_703c m4_703d m4_703e m4_703f m4_703g m4_704a m4_801a m4_801b m4_801c m4_801d m4_801e m4_801f m4_801g m4_801h m4_801i m4_801j m4_801k m4_801l m4_801m m4_801n m4_801o m4_801p m4_801q m4_801r  m4_baby1_802a m4_baby2_802a m4_baby3_802a m4_baby1_802b m4_baby2_802b m4_baby3_802b m4_baby1_802c m4_baby2_802c m4_baby3_802c m4_baby1_802d m4_baby2_802d m4_baby3_802d m4_baby1_802e m4_baby2_802e m4_baby3_802e m4_baby1_802f m4_baby2_802f m4_baby3_802f m4_baby1_802g m4_baby2_802g m4_baby3_802g m4_baby1_802h m4_baby2_802h m4_baby3_802h m4_baby1_802i m4_baby2_802i m4_baby3_802i m4_baby1_802j m4_baby2_802j m4_baby3_802j m4_baby1_803a m4_baby2_803a m4_baby3_803a m4_baby1_803b m4_baby2_803b m4_baby3_803b m4_baby1_803c m4_baby2_803c m4_baby3_803c m4_baby1_803d m4_baby2_803d m4_baby3_803d m4_baby1_803e m4_baby2_803e m4_baby3_803e m4_baby1_803f m4_baby2_803f m4_baby3_803f m4_901 m4_902a m4_902b m4_902c m4_902d m4_902e (99 = .r )
 
  
  *recoding of DK to .d
-recode m4_301 m4_302a m4_302b m4_304 m4_401a m4_401b m4_403a m4_403b m4_403c m4_405 m4_407 m4_409 m4_baby1_601a m4_baby2_601a m4_baby3_601a m4_baby1_601b m4_baby2_601b m4_baby3_601b  m4_baby1_601c m4_baby2_601c m4_baby3_601c m4_baby1_601d m4_baby2_601d m4_baby3_601d m4_baby1_601e m4_baby2_601e m4_baby3_601e m4_baby1_601f m4_baby2_601f m4_baby3_601f m4_baby1_601g m4_baby2_601g m4_baby3_601g m4_baby1_601h m4_baby2_601h m4_baby3_601h m4_baby1_601i m4_baby2_601i m4_baby3_601i m4_baby1_618a m4_baby1_618b m4_baby1_618c m4_baby2_618a m4_baby2_618b m4_baby2_618c m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_602a m4_602b m4_602d m4_602e m4_602f m4_602g m4_701a m4_701b m4_701c m4_701d m4_701e m4_701f m4_701g m4_701h m4_702 m4_703a m4_703b m4_703c m4_703d m4_703e m4_703f m4_703g m4_704a m4_801a m4_801b m4_801c m4_801d m4_801e m4_801f m4_801g m4_801h m4_801i m4_801j m4_801k m4_801l m4_801m m4_801n m4_801o m4_801p m4_801q m4_801r  m4_baby1_802a m4_baby2_802a m4_baby3_802a m4_baby1_802b m4_baby2_802b m4_baby3_802b m4_baby1_802c m4_baby2_802c m4_baby3_802c m4_baby1_802d m4_baby2_802d m4_baby3_802d m4_baby1_802e m4_baby2_802e m4_baby3_802e m4_baby1_802f m4_baby2_802f m4_baby3_802f m4_baby1_802g m4_baby2_802g m4_baby3_802g m4_baby1_802h m4_baby2_802h m4_baby3_802h m4_baby1_802i m4_baby2_802i m4_baby3_802i m4_802j_1 m4_802j_2 m4_802j_3 m4_803a_1 m4_803a_2 m4_803a_3 m4_803b_1 m4_803b_2 m4_803b_3 m4_803c_1 m4_803c_2 m4_803c_3 m4_803d_1 m4_803d_2 m4_803d_3 m4_803e_1 m4_803e_2 m4_803e_3 m4_803f_1 m4_803f_2 m4_803f_3 m4_901 m4_902a m4_902b m4_902c m4_902d m4_902e (99 = .r ) (98 = .d)
+recode m4_301 m4_302a m4_302b m4_304 m4_401a m4_401b m4_403a m4_403b m4_403c m4_405a m4_405b m4_405c m4_baby1_601a m4_baby2_601a m4_baby3_601a m4_baby1_601b m4_baby2_601b m4_baby3_601b  m4_baby1_601c m4_baby2_601c m4_baby3_601c m4_baby1_601d m4_baby2_601d m4_baby3_601d m4_baby1_601e m4_baby2_601e m4_baby3_601e m4_baby1_601f m4_baby2_601f m4_baby3_601f m4_baby1_601g m4_baby2_601g m4_baby3_601g m4_baby1_601h m4_baby2_601h m4_baby3_601h m4_baby1_601i m4_baby2_601i m4_baby3_601i m4_baby1_618a m4_baby1_618b m4_baby1_618c m4_baby2_618a m4_baby2_618b m4_baby2_618c m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_602a m4_602b m4_602d m4_602e m4_602f m4_602g m4_701a m4_701b m4_701c m4_701d m4_701e m4_701f m4_701g m4_701h m4_702 m4_703a m4_703b m4_703c m4_703d m4_703e m4_703f m4_703g m4_704a m4_801a m4_801b m4_801c m4_801d m4_801e m4_801f m4_801g m4_801h m4_801i m4_801j m4_801k m4_801l m4_801m m4_801n m4_801o m4_801p m4_801q m4_801r  m4_baby1_802a m4_baby2_802a m4_baby3_802a m4_baby1_802b m4_baby2_802b m4_baby3_802b m4_baby1_802c m4_baby2_802c m4_baby3_802c m4_baby1_802d m4_baby2_802d m4_baby3_802d m4_baby1_802e m4_baby2_802e m4_baby3_802e m4_baby1_802f m4_baby2_802f m4_baby3_802f m4_baby1_802g m4_baby2_802g m4_baby3_802g m4_baby1_802h m4_baby2_802h m4_baby3_802h m4_baby1_802i m4_baby2_802i m4_baby3_802i m4_baby1_802j m4_baby2_802j m4_baby3_802j m4_baby1_803a m4_baby2_803a m4_baby3_803a m4_baby1_803b m4_baby2_803b m4_baby3_803b m4_baby1_803c m4_baby2_803c m4_baby3_803c m4_baby1_803d m4_baby2_803d m4_baby3_803d m4_baby1_803e m4_baby2_803e m4_baby3_803e m4_baby1_803f m4_baby2_803f m4_baby3_803f m4_901 m4_902a m4_902b m4_902c m4_902d m4_902e (99 = .r ) (98 = .d)
 
  *-----------------------------------------------------*
  * Variables related to the 2nd and 3rd baby are coded as ".a" for women who only had one baby.
- recode m4_403b m4_403c m4_baby2_601a m4_baby3_601a m4_baby2_601b m4_baby3_601b m4_baby2_601c m4_baby3_601c m4_baby2_601d m4_baby3_601d m4_baby2_601e m4_baby3_601e m4_baby2_601f m4_baby3_601f m4_baby2_601g m4_baby3_601g m4_baby2_601h m4_baby3_601h m4_baby2_601i m4_baby3_601i m4_baby2_601i_other m4_baby3_601i_other m4_baby2_618a m4_baby2_618b m4_baby2_618c m4_baby3_618a m4_baby3_618b m4_baby3_618c   m4_baby2_603_other m4_baby3_603_other m4_baby2_802a m4_baby3_802a m4_baby2_802b m4_baby3_802b m4_baby2_802c m4_baby3_802c m4_baby2_802d m4_baby3_802d m4_baby2_802e m4_baby3_802e m4_baby2_802f m4_baby3_802f m4_baby2_802g m4_baby3_802g m4_baby2_802h m4_baby3_802h m4_baby2_802i m4_baby3_802i m4_802j_2 m4_802j_3 m4_baby3_802j_other m4_803a_2 m4_803a_3 m4_803b_2 m4_803b_3 m4_803c_2 m4_803c_3 m4_803d_2 m4_803d_3 m4_803e_2 m4_803e_3 m4_803f_2 m4_803f_3 m4_803g_3 m4_804_2 m4_804_3 (. = .a ) if m3_303a == 1
+ recode m4_403b m4_403c m4_baby2_601a m4_baby3_601a m4_baby2_601b m4_baby3_601b m4_baby2_601c m4_baby3_601c m4_baby2_601d m4_baby3_601d m4_baby2_601e m4_baby3_601e m4_baby2_601f m4_baby3_601f m4_baby2_601g m4_baby3_601g m4_baby2_601h m4_baby3_601h m4_baby2_601i m4_baby3_601i m4_baby2_601i_other m4_baby3_601i_other m4_baby2_618a m4_baby2_618b m4_baby2_618c m4_baby3_618a m4_baby3_618b m4_baby3_618c   m4_baby2_603_other m4_baby3_603_other m4_baby2_802a m4_baby3_802a m4_baby2_802b m4_baby3_802b m4_baby2_802c m4_baby3_802c m4_baby2_802d m4_baby3_802d m4_baby2_802e m4_baby3_802e m4_baby2_802f m4_baby3_802f m4_baby2_802g m4_baby3_802g m4_baby2_802h m4_baby3_802h m4_baby2_802i m4_baby3_802i m4_baby2_802j m4_baby3_802j m4_baby3_802j_other m4_baby2_803a m4_baby3_803a m4_baby2_803b m4_baby3_803b m4_baby2_803c m4_baby3_803c m4_baby2_803d m4_baby3_803d m4_baby2_803e m4_baby3_803e m4_baby2_803f m4_baby3_803f m4_baby3_803g m4_baby2_804 m4_baby3_804 (. = .a ) if m3_303a == 1
 
 
-*recode m4_803g_2  m4_baby2_802j_other  ("" = ".a" ) if m3_303a == 1
+*recode m4_baby2_803g  m4_baby2_802j_other  ("" = ".a" ) if m3_303a == 1
 *It doesn't work as well
 
-recode m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 m4_603_2_98 m4_603_2_99 m4_603_2_998 m4_603_2_999 m4_603_2_888 m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 m4_603_3_98 m4_603_3_99 m4_603_3_998 m4_603_3_999 m4_603_3_888 (0 = .a ) if m3_303a == 1
+recode m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 m4_baby2_603_98 m4_baby2_603_99 m4_baby2_603_998 m4_baby2_603_999 m4_baby2_603_888 m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 m4_baby3_603_98 m4_baby3_603_99 m4_baby3_603_998 m4_baby3_603_999 m4_baby3_603_888 (0 = .a ) if m3_303a == 1
 *the same for check box Qs
 
-recode m4_403c m4_baby3_601a m4_baby3_601b m4_baby3_601c m4_baby3_601d m4_baby3_601e m4_baby3_601f m4_baby3_601g m4_baby3_601h m4_baby3_601i m4_baby3_601i_other m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 m4_603_3_98 m4_603_3_99 m4_603_3_998 m4_603_3_999 m4_603_3_888 m4_baby3_603_other m4_baby3_802a m4_baby3_802b m4_baby3_802c m4_baby3_802d m4_baby3_802e m4_baby3_802f m4_baby3_802g m4_baby3_802h m4_baby3_802i m4_802j_3 m4_baby3_802j_other m4_803a_3 m4_803b_3 m4_803c_3 m4_803d_3 m4_803e_3 m4_803f_3 m4_803g_3 m4_804_3 (. = .a ) if m3_303a == 2
+recode m4_403c m4_baby3_601a m4_baby3_601b m4_baby3_601c m4_baby3_601d m4_baby3_601e m4_baby3_601f m4_baby3_601g m4_baby3_601h m4_baby3_601i m4_baby3_601i_other m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 m4_baby3_603_98 m4_baby3_603_99 m4_baby3_603_998 m4_baby3_603_999 m4_baby3_603_888 m4_baby3_603_other m4_baby3_802a m4_baby3_802b m4_baby3_802c m4_baby3_802d m4_baby3_802e m4_baby3_802f m4_baby3_802g m4_baby3_802h m4_baby3_802i m4_baby3_802j m4_baby3_802j_other m4_baby3_803a m4_baby3_803b m4_baby3_803c m4_baby3_803d m4_baby3_803e m4_baby3_803f m4_baby3_803g m4_baby3_804 (. = .a ) if m3_303a == 2
  
-recode m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 m4_603_3_98 m4_603_3_99 m4_603_3_998 m4_603_3_999 m4_603_3_888 (0 = .a ) if m3_303a == 2
+recode m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 m4_baby3_603_98 m4_baby3_603_99 m4_baby3_603_998 m4_baby3_603_999 m4_baby3_603_888 (0 = .a ) if m3_303a == 2
 *the same for check box Qs
 
 *-----------------------------------------------------*
@@ -3878,33 +4382,33 @@ recode m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_
  recode m4_306 m4_307 m4_308 m4_309 m4_310  (0 = .a) if m4_305 == 0
  
   *Qs about cost of the healthcare visits (if the participants didn't pay any other extra money, the next questions about the cost are recoded to .a)
- recode  m4_902a m4_902a_amt m4_902b m4_902b_amt  m4_902c m4_902c_amt m4_902d m4_902d_amt m4_902e m4_902e_amt m4_903 m4_904 (0 = .a) if m4_901 == 0 
+recode  m4_902a m4_902a_amt m4_902b m4_902b_amt  m4_902c m4_902c_amt m4_902d m4_902d_amt m4_902e m4_902e_amt m4_903 m4_904 (0 = .a) if m4_901 == 0 
  
-recode m4_905_1 m4_905_2 m4_905_3 m4_905_4 m4_905_5 m4_905_6 m4_905_96 (0 = .a) if m4_901 == 0
+recode m4_905a m4_905b m4_905c m4_905d m4_905e m4_905f m4_905_96 (0 = .a) if m4_901 == 0
 
 *-----------------------------------------------------*
 *Qs about the number of consultation 
-recode m4_402 m4_403a m4_403b m4_403c m4_404a m4_404b   m4_404c  m4_405  m4_407 m4_409 m4_412a m4_412b m4_412c m4_501 m4_502 m4_503 (. = .a) if m4_401a == 0 
+recode m4_402 m4_403a m4_403b m4_403c m4_404a m4_404b m4_404c m4_405a m4_405b m4_405c m4_412a m4_412b m4_412c m4_501 m4_502 m4_503 (. = .a) if m4_401a == 0 
 
-recode m4_406a  m4_406b   m4_406c   m4_406d    m4_406e   m4_406f    m4_406g     m4_406h    m4_406i m4_406j m4_406_96 m4_406_998 m4_406_999 m4_406_888 m4_408a m4_408b m4_408c m4_408d m4_408e m4_408f m4_408g m4_408h m4_408i m4_408j m4_408_96 m4_408_998 m4_408_999 m4_408_888 m4_410a m4_410b m4_410c m4_410d m4_410e m4_410f m4_410g m4_410h m4_410i m4_410j m4_410_96 m4_410_998 m4_410_999 m4_410_888 (0 = .a) if m4_401a == 0 
+recode m4_405a_1 m4_405a_2 m4_405a_3 m4_405a_4 m4_405a_5 m4_405a_6 m4_405a_7 m4_405a_8 m4_405a_9 m4_405a_10 m4_405a_96 m4_405a_998 m4_405a_999 m4_405a_888 m4_405b_1 m4_405b_2 m4_405b_3 m4_405b_4 m4_405b_5 m4_405b_6 m4_405b_7 m4_405b_8 m4_405b_9 m4_405b_10 m4_405b_96 m4_405b_998 m4_405b_999 m4_405b_888 m4_405c_1 m4_405c_2 m4_405c_3 m4_405c_4 m4_405c_5 m4_405c_6 m4_405c_7 m4_405c_8 m4_405c_9 m4_405c_10 m4_405c_96 m4_405c_998 m4_405c_999 m4_405c_888 (0 = .a) if m4_401a == 0 
 * if they didn't have any consultations
 
-recode m4_403b m4_403c m4_404b m4_404c m4_407 m4_409 m4_412b m4_412c m4_502 m4_503 (. = .a) if m4_402 == 1
+recode m4_403b m4_403c m4_404b m4_404c m4_405b m4_405c m4_412b m4_412c m4_502 m4_503 (. = .a) if m4_402 == 1
 
-recode m4_408a m4_408b m4_408c m4_408d m4_408e m4_408f m4_408g m4_408h m4_408i m4_408j m4_408_96 m4_408_998 m4_408_999 m4_408_888 m4_410a m4_410b m4_410c m4_410d m4_410e m4_410f m4_410g m4_410h m4_410i m4_410j m4_410_96 m4_410_998 m4_410_999 m4_410_888 (0 = .a) if m4_402 == 1
+recode m4_405b_1 m4_405b_2 m4_405b_3 m4_405b_4 m4_405b_5 m4_405b_6 m4_405b_7 m4_405b_8 m4_405b_9 m4_405b_10 m4_405b_96 m4_405b_998 m4_405b_999 m4_405b_888 m4_405c_1 m4_405c_2 m4_405c_3 m4_405c_4 m4_405c_5 m4_405c_6 m4_405c_7 m4_405c_8 m4_405c_9 m4_405c_10 m4_405c_96 m4_405c_998 m4_405c_999 m4_405c_888 (0 = .a) if m4_402 == 1
 * if they had only 1 consultation 
-recode m4_403c m4_404c m4_409 m4_412c m4_503 (. = .a) if m4_402 == 2
-recode m4_410a m4_410b m4_410c m4_410d m4_410e m4_410f m4_410g m4_410h m4_410i m4_410j m4_410_96 m4_410_998 m4_410_999 m4_410_888 (0 = .a) if m4_402 == 2
+recode m4_403c m4_404c m4_405c m4_412c m4_503 (. = .a) if m4_402 == 2
+recode m4_405c_1 m4_405c_2 m4_405c_3 m4_405c_4 m4_405c_5 m4_405c_6 m4_405c_7 m4_405c_8 m4_405c_9 m4_405c_10 m4_405c_96 m4_405c_998 m4_405c_999 m4_405c_888 (0 = .a) if m4_402 == 2
 * if they had only2 consultations 
 
 *-----------------------------------------------------*
 * if baby is not alive 
-recode m4_baby1_601a m4_baby1_601b m4_baby1_601c m4_baby1_601d m4_baby1_601e m4_baby1_601f m4_baby1_601g m4_baby1_601h m4_baby1_601i m4_baby1_618a m4_baby1_618b m4_baby1_618c  m4_baby1_802a m4_baby1_802b m4_baby1_802c m4_baby1_802d m4_baby1_802e m4_baby1_802f m4_baby1_802g m4_baby1_802h m4_baby1_802i m4_802j_1 m4_803a_1 m4_803b_1 m4_803c_1 m4_803d_1 m4_803e_1 m4_803f_1 m4_804_1 (. = .a ) if  m4_baby1_status == 0 
+recode m4_baby1_601a m4_baby1_601b m4_baby1_601c m4_baby1_601d m4_baby1_601e m4_baby1_601f m4_baby1_601g m4_baby1_601h m4_baby1_601i m4_baby1_618a m4_baby1_618b m4_baby1_618c  m4_baby1_802a m4_baby1_802b m4_baby1_802c m4_baby1_802d m4_baby1_802e m4_baby1_802f m4_baby1_802g m4_baby1_802h m4_baby1_802i m4_baby1_802j m4_baby1_803a m4_baby1_803b m4_baby1_803c m4_baby1_803d m4_baby1_803e m4_baby1_803f m4_baby1_804 (. = .a ) if  m4_baby1_status == 0 
 *If the 1st baby is not alive then the questions about the first baby are recoded (. = .a) 
 
-recode m4_baby2_601a m4_baby2_601b m4_baby2_601c m4_baby2_601d m4_baby2_601e m4_baby2_601f m4_baby2_601g m4_baby2_601h m4_baby2_601i m4_baby2_618a m4_baby2_618b m4_baby2_618c  m4_baby2_802a m4_baby2_802b m4_baby2_802c m4_baby2_802d m4_baby2_802e m4_baby2_802f m4_baby2_802g m4_baby2_802h m4_baby2_802i m4_802j_2 m4_803a_2 m4_803b_2 m4_803c_2 m4_803d_2 m4_803e_2 m4_803f_2 m4_804_2 (. = .a) if  m4_baby2_status == 0 
+recode m4_baby2_601a m4_baby2_601b m4_baby2_601c m4_baby2_601d m4_baby2_601e m4_baby2_601f m4_baby2_601g m4_baby2_601h m4_baby2_601i m4_baby2_618a m4_baby2_618b m4_baby2_618c  m4_baby2_802a m4_baby2_802b m4_baby2_802c m4_baby2_802d m4_baby2_802e m4_baby2_802f m4_baby2_802g m4_baby2_802h m4_baby2_802i m4_baby2_802j m4_baby2_803a m4_baby2_803b m4_baby2_803c m4_baby2_803d m4_baby2_803e m4_baby2_803f m4_baby2_804 (. = .a) if  m4_baby2_status == 0 
 *If the 2nd baby is not alive then the questions about the 2nd baby are recoded (. = .a) 
-recode m4_baby3_601a m4_baby3_601b m4_baby3_601c m4_baby3_601d m4_baby3_601e m4_baby3_601f m4_baby3_601g m4_baby3_601h m4_baby3_601i m4_baby3_601i_other m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_baby3_802a m4_baby3_802b m4_baby3_802c m4_baby3_802d m4_baby3_802e m4_baby3_802f m4_baby3_802g m4_baby3_802h m4_baby3_802i m4_802j_3 m4_803a_3 m4_803b_3 m4_803c_3 m4_803d_3 m4_803e_3 m4_803f_3 m4_804_3 (. = .a) if m4_baby3_status == 0
+recode m4_baby3_601a m4_baby3_601b m4_baby3_601c m4_baby3_601d m4_baby3_601e m4_baby3_601f m4_baby3_601g m4_baby3_601h m4_baby3_601i m4_baby3_601i_other m4_baby3_618a m4_baby3_618b m4_baby3_618c m4_baby3_802a m4_baby3_802b m4_baby3_802c m4_baby3_802d m4_baby3_802e m4_baby3_802f m4_baby3_802g m4_baby3_802h m4_baby3_802i m4_baby3_802j m4_baby3_803a m4_baby3_803b m4_baby3_803c m4_baby3_803d m4_baby3_803e m4_baby3_803f m4_baby3_804 (. = .a) if m4_baby3_status == 0
 *If the 3rd baby is not alive then the questions about the 3rd baby are recoded (. = .a) 
 *-----------Check box questions-----------*  
 recode m4_baby1_feed_a m4_baby1_feed_b m4_baby1_feed_c m4_baby1_feed_d m4_baby1_feed_e m4_baby1_feed_f m4_baby1_feed_g (0 = .r) if m4_203_1_99 == 1
@@ -3934,49 +4438,310 @@ recode m4_baby3_210a m4_baby3_210b m4_baby3_210c m4_baby3_210d m4_baby3_210e m4_
 recode  m4_baby3_210b m4_baby3_210c m4_baby3_210d m4_baby3_210e m4_baby3_210f m4_baby3_210g m4_baby3_210h m4_baby3_210i m4_baby3_210j m4_baby3_210_96   (0 = .r) if  m4_baby3_210j99 == 1
 recode  m4_baby3_210b m4_baby3_210c m4_baby3_210d m4_baby3_210e m4_baby3_210f m4_baby3_210g m4_baby3_210h m4_baby3_210i m4_baby3_210j m4_baby3_210_96  (0 = .d) if  m4_baby3_210j98 == 1
 
-recode  m4_406a m4_406b   m4_406c   m4_406d    m4_406e   m4_406f    m4_406g     m4_406h    m4_406i m4_406j m4_406_96 (0 = .d) if  m4_406_998 == 1
-recode  m4_406a m4_406b   m4_406c   m4_406d    m4_406e   m4_406f    m4_406g     m4_406h    m4_406i m4_406j m4_406_96 (0 = .r) if  m4_406_999 == 1
-recode  m4_406a m4_406b   m4_406c   m4_406d    m4_406e   m4_406f    m4_406g     m4_406h    m4_406i m4_406j m4_406_96 (0 = .d) if  m4_406_888 == 1
+recode  m4_405a_1 m4_405a_2   m4_405a_3   m4_405a_4    m4_405a_5   m4_405a_6    m4_405a_7     m4_405a_8    m4_405a_9 m4_405a_10 m4_405a_96 (0 = .d) if  m4_405a_998 == 1
+recode  m4_405a_1 m4_405a_2   m4_405a_3   m4_405a_4    m4_405a_5   m4_405a_6    m4_405a_7     m4_405a_8    m4_405a_9 m4_405a_10 m4_405a_96 (0 = .r) if  m4_405a_999 == 1
+recode  m4_405a_1 m4_405a_2   m4_405a_3   m4_405a_4    m4_405a_5   m4_405a_6    m4_405a_7     m4_405a_8    m4_405a_9 m4_405a_10 m4_405a_96 (0 = .d) if  m4_405a_888 == 1
 
-recode m4_408a m4_408b m4_408c m4_408d m4_408e m4_408f m4_408g m4_408h m4_408i m4_408j m4_408_96 (0 = .d) if  m4_408_998 == 1
-recode m4_408a m4_408b m4_408c m4_408d m4_408e m4_408f m4_408g m4_408h m4_408i m4_408j m4_408_96 (0 = .r) if  m4_408_999 == 1
-recode m4_408a m4_408b m4_408c m4_408d m4_408e m4_408f m4_408g m4_408h m4_408i m4_408j m4_408_96 (0 = .d) if  m4_408_888 == 1
+recode m4_405b_1 m4_405b_2 m4_405b_3 m4_405b_4 m4_405b_5 m4_405b_6 m4_405b_7 m4_405b_8 m4_405b_9 m4_405b_10 m4_405b_96 (0 = .d) if  m4_405b_998 == 1
+recode m4_405b_1 m4_405b_2 m4_405b_3 m4_405b_4 m4_405b_5 m4_405b_6 m4_405b_7 m4_405b_8 m4_405b_9 m4_405b_10 m4_405b_96 (0 = .r) if  m4_405b_999 == 1
+recode m4_405b_1 m4_405b_2 m4_405b_3 m4_405b_4 m4_405b_5 m4_405b_6 m4_405b_7 m4_405b_8 m4_405b_9 m4_405b_10 m4_405b_96 (0 = .d) if  m4_405b_888 == 1
 
-recode m4_410a m4_410b m4_410c m4_410d m4_410e m4_410f m4_410g m4_410h m4_410i m4_410j m4_410_96 (0 = .d) if  m4_410_998 == 1
-recode m4_410a m4_410b m4_410c m4_410d m4_410e m4_410f m4_410g m4_410h m4_410i m4_410j m4_410_96 (0 = .r) if  m4_410_999 == 1
-recode m4_410a m4_410b m4_410c m4_410d m4_410e m4_410f m4_410g m4_410h m4_410i m4_410j m4_410_96 (0 = .d) if  m4_410_888 == 1
+recode m4_405c_1 m4_405c_2 m4_405c_3 m4_405c_4 m4_405c_5 m4_405c_6 m4_405c_7 m4_405c_8 m4_405c_9 m4_405c_10 m4_405c_96 (0 = .d) if  m4_405c_998 == 1
+recode m4_405c_1 m4_405c_2 m4_405c_3 m4_405c_4 m4_405c_5 m4_405c_6 m4_405c_7 m4_405c_8 m4_405c_9 m4_405c_10 m4_405c_96 (0 = .r) if  m4_405c_999 == 1
+recode m4_405c_1 m4_405c_2 m4_405c_3 m4_405c_4 m4_405c_5 m4_405c_6 m4_405c_7 m4_405c_8 m4_405c_9 m4_405c_10 m4_405c_96 (0 = .d) if  m4_405c_888 == 1
 
 recode  m4_413a m4_413b m4_413c  m4_413d  m4_413e  m4_413f m4_413g  m4_413h  m4_413i   m4_413j m4_413k m4_413_96 (0 = .r) if  m4_413_99 == 1
 recode  m4_413a m4_413b m4_413c  m4_413d  m4_413e  m4_413f m4_413g  m4_413h  m4_413i   m4_413j m4_413k m4_413_96 (0 = .d) if  m4_413_998 == 1
 recode  m4_413a m4_413b m4_413c  m4_413d  m4_413e  m4_413f m4_413g  m4_413h  m4_413i   m4_413j m4_413k m4_413_96 (0 = .r) if  m4_413_999 == 1
 recode  m4_413a m4_413b m4_413c  m4_413d  m4_413e  m4_413f m4_413g  m4_413h  m4_413i   m4_413j m4_413k m4_413_96 (0 = .d) if  m4_413_888 == 1
 
-recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .d) if  m4_603_1_98 == 1
-recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .r) if  m4_603_1_99 == 1
-recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .d) if  m4_603_1_998 == 1 
-recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .r) if  m4_603_1_999 == 1
-recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .d) if  m4_603_1_888 == 1
+recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .d) if  m4_baby1_603_98 == 1
+recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .r) if  m4_baby1_603_99 == 1
+recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .d) if  m4_baby1_603_998 == 1 
+recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .r) if  m4_baby1_603_999 == 1
+recode  m4_baby1_603a m4_baby1_603b m4_baby1_603c m4_baby1_603d m4_baby1_603e m4_baby1_603f m4_baby1_603g m4_baby1_603_96 (0 = .d) if  m4_baby1_603_888 == 1
 
-recode m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96  (0 = .d) if  m4_603_2_98 == 1
-recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .r) if  m4_603_2_99 == 1
-recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .d) if  m4_603_2_998 == 1
-recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .r) if  m4_603_2_999 == 1
-recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .d) if  m4_603_2_888 == 1
+recode m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96  (0 = .d) if  m4_baby2_603_98 == 1
+recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .r) if  m4_baby2_603_99 == 1
+recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .d) if  m4_baby2_603_998 == 1
+recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .r) if  m4_baby2_603_999 == 1
+recode  m4_baby2_603a m4_baby2_603b m4_baby2_603c m4_baby2_603d m4_baby2_603e m4_baby2_603f m4_baby2_603g m4_baby2_603_96 (0 = .d) if  m4_baby2_603_888 == 1
 
-recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .d) if  m4_603_3_98 == 1
-recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .r) if  m4_603_3_99 == 1
-recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .d) if  m4_603_3_998 == 1
-recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .r) if  m4_603_3_999 == 1
-recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .d) if  m4_603_3_888 == 1
+recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .d) if  m4_baby3_603_98 == 1
+recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .r) if  m4_baby3_603_99 == 1
+recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .d) if  m4_baby3_603_998 == 1
+recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .r) if  m4_baby3_603_999 == 1
+recode  m4_baby3_603a m4_baby3_603b m4_baby3_603c m4_baby3_603d m4_baby3_603e m4_baby3_603f m4_baby3_603g m4_baby3_603_96 (0 = .d) if  m4_baby3_603_888 == 1
 
-recode  m4_905_1 m4_905_2 m4_905_3 m4_905_4 m4_905_5 m4_905_6 m4_905_96  (0 = .d) if  m4_905_998 == 1
-recode  m4_905_1 m4_905_2 m4_905_3 m4_905_4 m4_905_5 m4_905_6 m4_905_96  (0 = .r) if  m4_905_999 == 1
-recode  m4_905_1 m4_905_2 m4_905_3 m4_905_4 m4_905_5 m4_905_6 m4_905_96  (0 = .d) if  m4_905_888 == 1
+recode  m4_905a m4_905b m4_905c m4_905d m4_905e m4_905f m4_905_96  (0 = .d) if  m4_905_998 == 1
+recode  m4_905a m4_905b m4_905c m4_905d m4_905e m4_905f m4_905_96  (0 = .r) if  m4_905_999 == 1
+recode  m4_905a m4_905b m4_905c m4_905d m4_905e m4_905f m4_905_96  (0 = .d) if  m4_905_888 == 1
 
-drop m4_203_1_99 m4_203_1_999 m4_203_1_998 m4_203_1_888 m4_203_2_99 m4_203_2_999 m4_203_2_998 m4_203_2_888 m4_203_3_99 m4_203_3_998 m4_203_3_999 m4_203_3_888 m4_baby1_210j98 m4_baby1_210j99 m4_baby1_210i88 m4_baby2_210j98 m4_baby2_210j99 m4_baby2_210i88 m4_baby3_210j98 m4_baby3_210j99 m4_baby3_210i88 m4_406_998 m4_406_999 m4_406_888 m4_408_998 m4_408_999 m4_408_888 m4_410_998 m4_410_999 m4_410_888 m4_413_99 m4_413_998 m4_413_999 m4_413_888 m4_603_1_98 m4_603_1_99   m4_603_1_888 m4_603_2_98 m4_603_2_99 m4_603_2_998 m4_603_2_999 m4_603_2_888 m4_603_3_98 m4_603_3_99 m4_603_3_998 m4_603_3_999 m4_603_3_888 m4_905_998 m4_905_999 m4_905_888
+drop m4_203_1_99 m4_203_1_999 m4_203_1_998 m4_203_1_888 m4_203_2_99 m4_203_2_999 m4_203_2_998 m4_203_2_888 m4_203_3_99 m4_203_3_998 m4_203_3_999 m4_203_3_888 m4_baby1_210j98 m4_baby1_210j99 m4_baby1_210i88 m4_baby2_210j98 m4_baby2_210j99 m4_baby2_210i88 m4_baby3_210j98 m4_baby3_210j99 m4_baby3_210i88 m4_405a_998 m4_405a_999 m4_405a_888 m4_405b_998 m4_405b_999 m4_405b_888 m4_405c_998 m4_405c_999 m4_405c_888 m4_413_99 m4_413_998 m4_413_999 m4_413_888 m4_baby1_603_98 m4_baby1_603_99 m4_baby1_603_888 m4_baby1_603_98 m4_baby2_603_99 m4_baby2_603_998 m4_baby2_603_999 m4_baby2_603_888 m4_baby3_603_98 m4_baby3_603_99 m4_baby3_603_998 m4_baby3_603_999 m4_baby3_603_888 m4_905_998 m4_905_999 m4_905_888
 
 
+	** MODULE 5:	
+recode m5_consent (. = .a) if m5_start !=1	
+recode m5_maternal_death_reported (. = .a) if m5_consent !=1
+recode m5_date m5_starttime m5_date_of_maternal_death m5_maternal_death_learn (. = .a) if m5_consent !=1 | m5_maternal_death_reported == 1
+recode m5_maternal_death_learn_other (. = .a) if m5_maternal_death_learn !=96 // numeric bc of 0 obs
 
+recode m5_baby1_alive (. = .a) if m5_consent !=1 | m5_maternal_death_reported == 1 | m3_303a == . | m3_303a == .a | ///
+								  m3_303a == .d | m3_303a == .d // SS: N=1 missing
+
+recode m5_baby2_alive (. = .a) if m5_consent !=1 | m5_maternal_death_reported == 1 | m3_303a == . | m3_303a == .a | ///
+								  m3_303a == .d | m3_303a == .d | m3_303a == 1
+
+recode m5_baby3_alive (. = .a) if m5_consent !=1 | m5_maternal_death_reported == 1 | m3_303a == . | m3_303a == .a | ///
+								  m3_303a == .d | m3_303a == .d | m3_303a == 1 | m3_303a == 2
+								  
+recode m5_baby1_health m5_baby1_feed_a m5_baby1_feed_b m5_baby1_feed_c m5_baby1_feed_d m5_baby1_feed_e m5_baby1_feed_f ///
+	   m5_baby1_feed_h m5_baby1_feed_99 m5_baby1_feed_998 m5_baby1_feed_999 m5_baby1_feed_888 m5_baby1_sleep m5_baby1_feed ///
+	   m5_baby1_breath m5_baby1_stool m5_baby1_mood m5_baby1_skin m5_baby1_interactivity m5_baby1_issues_a m5_baby1_issues_b ///
+	   m5_baby1_issues_c m5_baby1_issues_d m5_baby1_issues_e m5_baby1_issues_f m5_baby1_issues_g m5_baby1_issues_h m5_baby1_issues_i ///
+	   m5_baby1_issues_j m5_baby1_issues_k m5_baby1_issues_l m5_baby1_issues_oth (. = .a) if m5_baby1_alive !=1
+
+recode m5_baby2_health m5_baby2_feed_a m5_baby2_feed_b m5_baby2_feed_c m5_baby2_feed_d m5_baby2_feed_e m5_baby2_feed_f ///
+	   m5_baby2_feed_h m5_baby2_feed_99 m5_baby2_feed_998 m5_baby2_feed_999 m5_baby2_feed_888 m5_baby2_sleep m5_baby2_feed ///
+	   m5_baby2_breath m5_baby2_stool m5_baby2_mood m5_baby2_skin m5_baby2_interactivity m5_baby2_issues_a m5_baby2_issues_b ///
+	   m5_baby2_issues_c m5_baby2_issues_d m5_baby2_issues_e m5_baby2_issues_f m5_baby2_issues_g m5_baby2_issues_h m5_baby2_issues_i ///
+	   m5_baby2_issues_j m5_baby2_issues_k m5_baby2_issues_l m5_baby2_issues_oth (. = .a) if m5_baby2_alive !=1
+
+recode m5_baby3_health m5_baby3_feed_a m5_baby3_feed_b m5_baby3_feed_c m5_baby3_feed_d m5_baby3_feed_e m5_baby3_feed_f ///
+	   m5_baby3_feed_h m5_baby3_feed_99 m5_baby3_feed_998 m5_baby3_feed_999 m5_baby3_feed_888 m5_baby3_sleep m5_baby3_feed ///
+	   m5_baby3_breath m5_baby3_stool m5_baby3_mood m5_baby3_skin m5_baby3_interactivity m5_baby3_issues_a m5_baby3_issues_b ///
+	   m5_baby3_issues_c m5_baby3_issues_d m5_baby3_issues_e m5_baby3_issues_f m5_baby3_issues_g m5_baby3_issues_h m5_baby3_issues_i ///
+	   m5_baby3_issues_j m5_baby3_issues_k m5_baby3_issues_l m5_baby3_issues_oth (. = .a) if m5_baby3_alive !=1
+
+recode m5_feed_freq_et m5_breastfeeding (. = .a) if m5_maternal_death_reported == 1 | m5_baby1_feed_a !=1 | ///
+													m5_baby2_feed_a !=1 | m5_baby3_feed_a !=1 | m5_baby1_alive !=1 | ///
+													m5_baby2_alive !=1 | m5_baby3_alive !=1
+								   
+recode m5_feed_freq_et_unk (. = .a) if m5_maternal_death_reported == 1 | m5_baby1_alive !=1 | m5_baby2_alive !=1 | ///
+									   m5_baby3_alive !=1 | m5_feed_freq_et !=. 
+									   
+	
+replace m5_baby1_issues_oth_text = ".a" if m5_baby1_issues_oth !=1
+
+recode m5_baby2_issues_oth_text (. = .a) if m5_baby2_issues_oth !=1 // numeric bc of 0 obs
+
+recode m5_baby3_issues_oth_text (. = .a) if m5_baby3_issues_oth !=1 // numeric bc of 0 obs
+
+recode m5_baby1_death m5_baby1_death_age m5_baby1_death_cause m5_baby1_advice m5_baby1_deathloc (. = .a) if m5_baby1_alive !=0 // SS: N=1 missing
+recode m5_baby2_death m5_baby2_death_age m5_baby2_death_cause m5_baby2_advice m5_baby2_deathloc (. = .a) if m5_baby2_alive !=0
+recode m5_baby3_death m5_baby3_death_age m5_baby3_death_cause m5_baby3_advice m5_baby3_deathloc (. = .a) if m5_baby3_alive !=0
+
+recode m5_baby1_death_date (. = .a) if m5_baby1_death !=1
+recode m5_baby2_death_date (. = .a) if m5_baby2_death !=1
+recode m5_baby3_death_date (. = .a) if m5_baby3_death !=1
+
+replace m5_baby1_deathcause_other = ".a" if m5_baby1_death_cause !=96 
+recode m5_baby2_deathcause_other (. = .a) if m5_baby2_death_cause !=96 // numeric bc of 0 obs
+recode m5_baby3_deathcause_other (. = .a) if m5_baby3_death_cause !=96 // numeric bc of 0 obs
+
+recode m5_health m5_health_a m5_health_b m5_health_c m5_health_d m5_health_e m5_depression_a m5_depression_b ///
+	   m5_depression_c m5_depression_d m5_depression_e m5_depression_f m5_depression_g m5_depression_h ///
+	   m5_depression_i m5_affecthealth_scale m5_pain m5_leakage (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 // N=1 missing
+
+recode m5_feeling_a m5_feeling_b m5_feeling_c m5_feeling_d m5_feeling_e m5_feeling_f m5_feeling_g m5_feeling_h (. = .a) ///
+	   if m5_consent !=1 | m5_maternal_death_reported !=0 | m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1
+
+recode m5_leakage_when (. = .a) if m5_leakage !=1
+
+recode m5_leakage_affect (. = .a) if m5_consent !=1 | m5_leakage !=1
+
+recode m5_leakage_tx (. = .a) if m5_leakage !=1
+
+recode m5_leakage_notx_reason_0 m5_leakage_notx_reason_1 m5_leakage_notx_reason_2 m5_leakage_notx_reason_3 m5_leakage_notx_reason_4 ///
+	   m5_leakage_notx_reason_5 m5_leakage_notx_reason_6 m5_leakage_notx_reason_7 m5_leakage_notx_reason_8 m5_leakage_notx_reason_9 ///
+	   m5_leakage_notx_reason_10 m5_leakage_notx_reason_11 m5_leakage_notx_reason_96 m5_leakage_notx_reason_99 ///
+	   m5_leakage_notx_reason_998 m5_leakage_notx_reason_999 m5_leakage_notx_reason_888 (. = .a) if m5_leakage !=1 | m5_leakage_tx ==1
+
+replace m5_leakage_notx_reason_oth = ".a" if m5_leakage_notx_reason_96 !=1
+
+recode m5_leakage_txeffect (. = .a) if m5_consent !=1 | m5_leakage !=1 | m5_leakage_tx !=1
+
+recode m5_401 m5_402 m5_403 m5_404 m5_405a m5_405b m5_406a m5_406b (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 // N=1 missing
+
+recode m5_501a (. = .a) if m5_consent !=1 | m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1
+
+recode m5_501b (. = .a) if  m5_consent !=1 | m5_baby1_alive !=0 | m5_baby2_alive !=0 | m5_baby3_alive !=0
+
+recode m5_502 (. = .a) if m5_consent !=1 | m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1
+
+recode m5_503_1 m5_504a_1 (. = .a) if m5_502 !=1 | m5_502 !=2 | m5_502 !=3
+
+recode m5_503_2 m5_504a_2 (. = .a) if m5_502 !=2 | m5_502 !=3
+
+recode m5_503_3 m5_504a_3 (. = .a) if m5_502 !=3
+
+replace m5_504a_other_a_1=".a" if m5_504a_1 !=23
+
+replace m5_504a_other_b_1=".a" if m5_504a_1 !=96
+
+replace m5_504a_other_a_1 = ".d" if m5_504a_other_a_1 == "98"
+replace m5_504a_other_a_1 = "." if m5_504a_other_a_1 == "998"
+
+recode m5_505_1 (. = .a) if m5_502 !=1 | m5_502 !=2 | m5_502 !=3
+
+recode m5_consultation1_a m5_consultation1_b m5_consultation1_c m5_consultation1_d m5_consultation1_e m5_consultation1_f ///
+	   m5_consultation1_g m5_consultation1_h m5_consultation1_i m5_consultation1_j m5_consultation1_oth m5_consultation1_98 ///
+	   m5_consultation1_99 m5_consultation1_998 m5_consultation1_999 m5_consultation1_888 (. = .a) if ///
+	   m5_505_1 !=0 | m5_505_1 !=.d | m5_505_1 !=.r
+
+replace m5_consultation1_oth_text = ".a" if m5_consultation1_oth !=1
+
+recode m5_505_2 (. = .a) if m5_502 !=2 | m5_502 !=3
+	   
+recode m5_consultation2_a m5_consultation2_b m5_consultation2_c m5_consultation2_d m5_consultation2_e m5_consultation2_f ///
+	   m5_consultation2_g m5_consultation2_h m5_consultation2_i m5_consultation2_j m5_consultation2_oth m5_consultation2_98 ///
+	   m5_consultation2_99 m5_consultation2_998 m5_consultation2_999 m5_consultation2_888 (. = .a) if m5_505_2 !=0 | m5_505_2 !=.d ///
+	   | m5_505_2 !=99
+
+replace m5_consultation2_oth_text = ".a" if m5_consultation2_oth !=1
+	   
+recode m5_505_3 (. = .a) if m5_502 !=3 	   
+
+recode m5_consultation3_a m5_consultation3_b m5_consultation3_c m5_consultation3_d m5_consultation3_e m5_consultation3_f ///
+	   m5_consultation3_g m5_consultation3_h m5_consultation3_i m5_consultation3_j m5_consultation3_oth m5_consultation3_98 ///
+	   m5_consultation3_99 m5_consultation3_998 m5_consultation3_999 m5_consultation3_888 (. = .a) if m5_505_3 !=0 | ///
+	   m5_505_3 !=.d | m5_505_3 !=.r	   
+	   
+replace m5_consultation3_oth_text = ".a" if m5_consultation3_oth !=1
+	
+recode m5_no_visit_a m5_no_visit_b m5_no_visit_c m5_no_visit_d m5_no_visit_e m5_no_visit_f m5_no_visit_g m5_no_visit_h ///
+	   m5_no_visit_i m5_no_visit_j m5_no_visit_k m5_no_visit_96 m5_no_visit_98 m5_no_visit_99 (. = .a) if m5_501a !=0 | m5_501b !=0
+	
+replace m5_no_visit_oth = ".a" if m5_no_visit_96 !=1
+
+recode m5_consultation1_carequality (. = .a) if m5_502 !=1 | m5_502 !=2 | m5_502 !=3
+recode m5_consultation2_carequality (. = .a) if m5_502 !=2 | m5_502 !=3
+recode m5_consultation3_carequality (. = .a) if m5_502 !=3
+
+recode m5_701a m5_701b m5_701c m5_701d m5_701e m5_701f m5_701g m5_701h m5_701i m5_702a m5_702b m5_702c m5_702d ///
+	   m5_702e m5_702f m5_702g (. = .a) if m5_baby1_alive !=1 | m5_501a !=1 | m5_501b !=1
+
+replace m5_701_other = ".a" if m5_701i !=1
+
+recode m5_baby1_703a m5_baby1_703b m5_baby1_703c m5_baby1_703d m5_baby1_703e m5_baby1_703f m5_baby1_703g m5_baby1_703_96 ///
+	   m5_baby1_703_98 m5_baby1_703_99 (. = .a) if m5_baby1_alive !=1 | m5_baby1_issues_a !=1 | m5_baby1_issues_b !=1 | ///
+	   m5_baby1_issues_c !=1 | m5_baby1_issues_d !=1 | m5_baby1_issues_e !=1 | m5_baby1_issues_f !=1 | m5_baby1_issues_g !=1 | ///
+	   m5_baby1_issues_h !=1 | m5_baby1_issues_i !=1 | m5_baby1_issues_j !=1 | m5_baby1_issues_k !=1 | m5_baby1_issues_l !=1
+ 	
+replace m5_baby1_703_other = ".a" if m5_baby1_703_96 !=1
+	
+recode m5_baby2_703a m5_baby2_703b m5_baby2_703c m5_baby2_703d m5_baby2_703e m5_baby2_703f m5_baby2_703g m5_baby2_703_96 ///
+	   m5_baby2_703_98 m5_baby2_703_99 (. = .a) if m5_baby2_alive !=1 | m5_baby2_issues_a !=1 | m5_baby2_issues_b !=1 | ///
+	   m5_baby2_issues_c !=1 | m5_baby2_issues_d !=1 | m5_baby2_issues_e !=1 | m5_baby2_issues_f !=1 | m5_baby2_issues_g !=1 | ///
+	   m5_baby2_issues_h !=1 | m5_baby2_issues_i !=1 | m5_baby2_issues_j !=1 | m5_baby2_issues_k !=1 | m5_baby2_issues_l !=1
+
+recode m5_baby2_703_other (. = .a) if m5_baby2_703_96 !=1 // numeric bc of 0 obs
+
+recode m5_baby3_703a m5_baby3_703b m5_baby3_703c m5_baby3_703d m5_baby3_703e m5_baby3_703f m5_baby3_703g m5_baby3_703_96 ///
+	   m5_baby3_703_98 m5_baby3_703_99 (. = .a) if m5_baby3_alive !=1 | m5_baby3_issues_a !=1 | m5_baby3_issues_b !=1 | ///
+	   m5_baby3_issues_c !=1 | m5_baby3_issues_d !=1 | m5_baby3_issues_e !=1 | m5_baby3_issues_f !=1 | m5_baby3_issues_g !=1 | ///
+	   m5_baby3_issues_h !=1 | m5_baby3_issues_i !=1 | m5_baby3_issues_j !=1 | m5_baby3_issues_k !=1 | m5_baby3_issues_l !=1
+	
+recode m5_baby3_703_other (. = .a) if m5_baby3_703_96 !=1
+	
+recode m5_801a m5_801b m5_801c m5_801d m5_801e m5_801f m5_801g m5_801h (. = .a) if m5_501a !=1 | m5_501b !=1  	
+
+replace m5_801_other = ".a" if m5_801h !=1
+
+recode m5_802 (. = .a) if m3_605a !=1 | m5_501a !=1 | m5_501b !=1  	
+
+recode m5_803a m5_803b m5_803c m5_803d m5_803e m5_803f m5_803g (. = .a) if m5_501a !=1 | m5_501b !=1  	
+
+egen m5_phqscore = rowtotal(m5_depression_a m5_depression_b)
+recode m5_804a (. = .a) if m5_phqscore <3
+drop m5_phqscore
+
+recode m5_804b m5_804c (. = .a) if m5_804a !=1
+
+recode m5_901a m5_901b m5_901c m5_901d m5_901e m5_901j m5_901k m5_901l m5_901m m5_901n m5_901o m5_901p m5_901q ///
+	   m5_901r m5_901s (. = .a) if m5_501a !=1 | m5_501b !=1  	
+
+recode m5_901f (. = .a) if m5_501a !=1 | m5_501b !=1 | kebele_intworm !=1
+
+recode m5_901g (. = .a) if m5_501a !=1 | m5_501b !=1 | kebele_malaria !=1
+
+recode m5_901h (. = .a) if m5_501a !=1 | m5_501b !=1 | m1_708b !=1
+	
+recode m5_901i (. = .a) if m5_501a !=1 | m5_501b !=1 | m5_804a !=1 	 
+
+replace m5_901s_other = ".a" if m5_901s !=1
+	
+recode m5_902k (. = .a) if m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1
+	
+recode m5_902l m5_902b m5_902c m5_902d m5_902m m5_902f m5_902j (. = .a) if m5_baby1_alive !=1 | m5_baby2_alive !=1 | ///
+																		   m5_baby3_alive !=1 | m5_501a !=1
+
+recode m5_902h (. = .a) if m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1 | m5_501a !=1 | kebele_malaria !=1
+
+recode m5_902i (. = .a) if m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1 | m5_501a !=1 | m1_708b !=1
+	
+replace m5_902_other = ".a" if m5_902j !=1
+
+recode m5_903a m5_903b m5_903c m5_903d m5_903e m5_903f m5_903_other (. = .a) if m5_baby1_alive !=1 | m5_baby2_alive !=1 | ///
+																				m5_baby3_alive !=1 | m5_501a !=1 
+
+recode m5_903_oth_text (. = .a) if m5_903_other !=1 // numeric bc of 0 observations
+
+recode m5_904  (. = .a) if m5_903a !=1 | m5_903b !=1 | m5_903c !=1 | m5_903d !=1 | m5_903e !=1 | m5_903f !=1 | m5_903_other !=1
+
+* Please note 902 order in data dictionary is different than the order in the ET country-specific PDF
+recode m5_905 (. = .a) if  m5_baby1_alive !=1 | m5_baby2_alive !=1 | m5_baby3_alive !=1 | m5_501a !=1 | m5_902k !=1 | ///
+						   m5_902l !=1 | m5_902b  !=1 | m5_902c  !=1 | m5_902d !=1 | m5_902m !=1 | m5_902f !=1 | m5_902h !=1 | ///
+						   m5_902i !=1 | m5_902j !=1 | m5_903a !=1 | m5_903b !=1 | m5_903c !=1 | m5_903d !=1 | m5_903e !=1 | m5_903f !=1
+	
+recode m5_1001 (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 | m5_501a !=1 | m5_501b !=1
+	
+recode m5_1002a_yn m5_1002b_yn m5_1002c_yn m5_1002d_yn m5_1002e_yn (. = .a) if m5_1001 !=1
+
+recode m5_1002a (. = .a) if m5_1002a_yn !=1
+
+recode m5_1002b (. = .a) if m5_1002b_yn !=1
+
+recode m5_1002c (. = .a) if m5_1002c_yn !=1
+
+recode m5_1002d (. = .a) if m5_1002d_yn !=1
+
+recode m5_1002e (. = .a) if m5_1002e_yn !=1
+	
+recode m5_1003 m5_1003_confirm (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 | m5_1001 !=1
+
+recode m5_1004 (. = .a) if m5_1003_confirm !=0
+	
+recode m5_1005a m5_1005b m5_1005c m5_1005d m5_1005e m5_1005f m5_1005_other (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0
+
+replace m5_1005_oth_text = ".a" if m5_1005_other !=1
+
+recode m5_1101 (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 // N=1 missing
+
+recode m5_1102 (. = .a) if m5_1101 !=1
+
+recode m5_1102_other (. = .a) if m5_1102 !=96
+
+recode m5_1103 (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 // N=1 missing
+
+recode m5_1104 (. = .a) if m5_1103 !=1
+
+replace m5_1104_other = ".a" if m5_1104 !=96
+
+recode m5_1105 (. = .a) if m5_1101 !=1 | m5_1103 !=1
+
+recode m5_1201 m5_1202a m5_height m5_weight m5_muac m5_sbp1 m5_dbp1 m5_hr1 m5_sbp2 m5_dbp2 m5_hr2 m5_sbp3 ///
+	   m5_dbp3 m5_hr3 m5_anemiatest (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 // N=3 missing for m5_1201, and N=64 for m5_1202, N=26 missing for m5_height
+
+recode m5_hb_level (. = .a) if m5_anemiatest !=1 | m5_consent !=1 | m5_maternal_death_reported !=0 // N=11 missing?
+
+recode m5_baby1_weight m5_baby2_weight m5_baby3_weight m5_baby1_length m5_baby2_length m5_baby3_length m5_baby1_hc m5_baby2_hc ///
+	   m5_baby3_hc (. = .a) if m5_consent !=1 | m5_maternal_death_reported !=0 | m5_baby1_alive !=1 | m5_baby2_alive !=1 | ///
+	   m5_baby3_alive !=1 
+
+recode m5_complete (. = .a) if m5_consent !=1
+
+								  
 *------------------------------------------------------------------------------*
 * drop variables after recoding/renaming
 
@@ -3995,11 +4760,9 @@ label variable redcap_event_name "Redcap Event Name"
 label variable redcap_repeat_instrument "Redcap Repeat Instrument"
 label variable redcap_repeat_instance "Redcap Repeat Instance"
 label variable redcap_data_access_group "Redcap Data Access Group"
-label variable study_id "Study ID"
 label variable interviewer_id "Interviewer ID"
 
 	** MODULE 1:		
-
 lab var m1_date"A2. Date of interview"
 lab var m1_start_time "A3. Time of interview"
 lab var study_site "A4. Study site"
@@ -4019,7 +4782,7 @@ lab var continuecare "ETH-1-B. Do you plan to continue receiving care for your p
 lab var b7eligible "B7. Is the respondent eligible to participate in the study AND signed a consent form?"
 lab var first_name "101. What is your first name?"
 lab var family_name "102. What is your family name?"
-lab var respondentid "103. Assign respondent ID"
+lab var id_et "103. Assign respondent ID"
 lab var mobile_phone "104. Do you have a mobile phone with you today?"
 lab var phone_number "105. What is your phone number?"
 lab var flash "106. Can I 'flash' this number now to make sure I have noted it correctly?"
@@ -4041,16 +4804,16 @@ lab var m1_205b "205b. I am now going to read three statements regarding your ab
 lab var m1_205c "205c. I am going to read three statements regarding your ability to perform your usual daily activities, by which I mean your ability to work, take care of your family or perform leisure activities. Please indicate which statement best describe your own health state today"
 lab var m1_205d "205d. I am going to read three statements regarding your experience with physical pain or discomfort. Please indicate which statement best describe your own health state today"
 lab var m1_205e "205e. I am going to read three statements regarding your experience with anxiety or depression. Please indicate which statements best describe your own health state today"
-lab var phq9a "206a. Over the past 2 weeks, how many days have you been bothered by little interest or pleasure in doing things?"
-lab var phq9b "206b. Over the past 2 weeks, on how many days have you been bothered by feeling down, depressed, or hopeless?"
-lab var phq9c "206c. Over the past 2 weeks, on how many days have you been bothered by trouble falling or staying asleep, or sleeping too much?"
-lab var phq9d "206d. Over the past 2 weeks, on how many days have you been bothered by feeling tired or having little energy?"
-lab var phq9e "206e. Over the past 2 weeks, on how many days have you been bothered by poor appetite or overeating?"
-lab var phq9f "206f. Over the past 2 weeks, on how many days have you been bothered by feeling bad about yourself or that you are a failure or have let yourself or your family down?"
-lab var phq9g "206g. Over the past 2 weeks, on how many days have you been bothered by trouble concentrating on things, such as your work or home duties?"
-lab var phq9h "206h. Over the past 2 weeks, on how many days have you been bothered by moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
-lab var phq9i "206i. Over the past 2 weeks, on how many days have you been bothered by Thoughts that you would be better off dead, or thoughts of hurting yourself in some way?"
-lab var m1_207 "207. Over the past 2 weeks, on how many days did health problems affect your productivity while you were working? Work may include formal employment, a business, sales or farming, but also work you do around the house, childcare, or studying. Think about days you were limited in the amount or kind of work you could do, days you accomplished less than you would like, or days you could not do your work as carefully as usual."
+lab var phq9a "206a. How many days have you been bothered by little interest or pleasure in doing things?"
+lab var phq9b "206b. How many days have you been bothered by feeling down, depressed, or hopeless?"
+lab var phq9c "206c. How many days have you been bothered by trouble falling or staying asleep, or sleeping too much?"
+lab var phq9d "206d. How many days have you been bothered by feeling tired or having little energy?"
+lab var phq9e "206e. How many days have you been bothered by poor appetite or overeating?"
+lab var phq9f "206f. How many days have you been bothered by feeling bad about yourself or that you are a failure or have let yourself or your family down?"
+lab var phq9g "206g. How many days have you been bothered by trouble concentrating on things, such as your work or home duties?"
+lab var phq9h "206h. How many days have you been bothered by moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
+lab var phq9i "206i. How many days have you been bothered by Thoughts that you would be better off dead, or thoughts of hurting yourself in some way?"
+lab var m1_207 "207. How many days did health problems affect your productivity while you were working?"
 lab var m1_301 "301. How would you rate the overall quality of medical care in Ethiopia?"
 lab var m1_302 "302. Overall view of the health care system in your country"
 lab var m1_303 "303. Confidence that you would receive good quality healthcare from the health system if you got very sick?"
@@ -4069,7 +4832,7 @@ lab var m1_501 "501. What is your first language?"
 lab var m1_501_other "501_Other. Specify other language"
 lab var m1_502 "502. Have you ever attended school?"
 lab var m1_503 "503. What is the highest level of education you have completed?"
-lab var m1_504 "504. Now I would like you to read this sentence to me. 1. PARENTS LOVE THEIR CHILDREN. 3. THE CHILD IS READING A BOOK. 4. CHILDREN WORK HARD AT SCHOOL."
+lab var m1_504 "504. Now I would like you to read this sentence to me"
 lab var m1_505 "505. What is your current marital status?"
 lab var m1_506 "506. What is your occupation, that is, what kind of work do you mainly do?"
 lab var m1_506_other "506_Other. Specify other occupation"
@@ -4082,14 +4845,14 @@ lab var m1_510a "510a. Have you ever heard of an illness called tuberculosis or 
 lab var m1_510b "510b. Do you think that TB can be treated using herbal or traditional medicine made from plants?"
 lab var m1_511 "511. When children have diarrhea, do you think that they should be given less to drink than usual, more to drink than usual, about the same or it doesn't matter?"
 lab var m1_512 "512. Is smoke from a wood burning traditional stove good for health, harmful for health or do you think it doesn't really matter?"
-lab var m1_513a_1 "513a. What phone numbers can we use to reach you in the coming months? / Primary personal phone"
-lab var m1_513a_2 "513a. What phone numbers can we use to reach you in the coming months? / Secondary personal phone"
-lab var m1_513a_3 "513a. What phone numbers can we use to reach you in the coming months? / Spouse or partner phone"
-lab var m1_513a_4 "513a. What phone numbers can we use to reach you in the coming months? / Community health worker phone"
-lab var m1_513a_5 "513a. What phone numbers can we use to reach you in the coming months? / Friend or other family member phone 1"
-lab var m1_513a_6 "513a. What phone numbers can we use to reach you in the coming months? / Friend or other family member phone 2"
-lab var m1_513a_7 "513a. What phone numbers can we use to reach you in the coming months? / Other phone"
-lab var m1_513a_8 "513a. What phone numbers can we use to reach you in the coming months? / Does not have any phone numbers"
+lab var m1_513a_1 "513a. Primary personal phone"
+lab var m1_513a_2 "513a. Secondary personal phone"
+lab var m1_513a_3 "513a. Spouse or partner phone"
+lab var m1_513a_4 "513a. Community health worker phone"
+lab var m1_513a_5 "513a. Friend or other family member phone 1"
+lab var m1_513a_6 "513a. Friend or other family member phone 2"
+lab var m1_513a_7 "513a. Other phone"
+lab var m1_513a_8 "513a. Does not have any phone numbers"
 lab var m1_513a_999 "513a. Unknown"
 lab var m1_513a_998 "513a. Refuse to answer"
 lab var m1_513a_888 "513a. No information"
@@ -4236,33 +4999,33 @@ lab var m1_812b_888_et "812b. Unknown"
 lab var m1_812b_998_et "812b. Refuse to answer"
 lab var m1_812b_999_et "812b. No information"
 lab var m1_812b_other "812_Other. Specify other reason for C-section"
-lab var m1_813a "813a. Some women experience common health problems during pregnancy. Did you experience nausea in your pregnancy so far, or not?"
-lab var m1_813b "813b. Some women experience common health problems during pregnancy. Did you experience heartburn in your pregnancy so far, or not?"
-lab var m1_813c "813c. Some women experience common health problems during pregnancy. Did you experience leg cramps in your pregnancy so far, or not?"
-lab var m1_813d "813d. Some women experience common health problems during pregnancy. Did you experience back pain in your pregnancy so far, or not?"
+lab var m1_813a "813a. Did you experience nausea in your pregnancy so far, or not?"
+lab var m1_813b "813b. Did you experience heartburn in your pregnancy so far, or not?"
+lab var m1_813c "813c. Did you experience leg cramps in your pregnancy so far, or not?"
+lab var m1_813d "813d. Did you experience back pain in your pregnancy so far, or not?"
 lab var m1_813e "813e. During the visit today did the provider give you treatment or advice for addressing these kinds of problems?"
 lab var m1_8a_et "Eth-1-8a. Did you experience Preeclampsia / Eclampsia in your pregnancy so far, or not?"
-lab var m1_8b_et "Eth-1-8b. Some women experience medical and obstetric health problems during pregnancy. Did you experience Hyperemesis gravidarum during pregnancy in your pregnancy so far, or not?"
-lab var m1_8c_et "Eth-1-8c. Some women experience medical and obstetric health problems during pregnancy. Did you experience Anemia during pregnancy in your pregnancy so far, or not?"
-lab var m1_8d_et "Eth-1-8d. Some women experience medical and obstetric health problems during pregnancy. Did you experience Amniotic fluid volume problems (Oligohydramnios / Polyhydramnios) during pregnancy in your pregnancy so far, or not?"
-lab var m1_8e_et "Eth-1-8e. Some women experience medical and obstetric health problems during pregnancy. Did you experience Asthma during pregnancy in your pregnancy so far, or not?"
-lab var m1_8f_et "Eth-1-8f. Some women experience medical and obstetric health problems during pregnancy. Did you experience RH isoimmunization during pregnancy in your pregnancy so far, or not?"
+lab var m1_8b_et "Eth-1-8b. Did you experience Hyperemesis gravidarum during pregnancy in your pregnancy so far, or not?"
+lab var m1_8c_et "Eth-1-8c. Did you experience Anemia during pregnancy in your pregnancy so far, or not?"
+lab var m1_8d_et "Eth-1-8d. Did you experience Amniotic fluid volume problems (Oligohydramnios / Polyhydramnios) during pregnancy in your pregnancy so far, or not?"
+lab var m1_8e_et "Eth-1-8e. Did you experience Asthma during pregnancy in your pregnancy so far, or not?"
+lab var m1_8f_et "Eth-1-8f. Did you experience RH isoimmunization during pregnancy in your pregnancy so far, or not?"
 lab var m1_8g_et "Eth - 1 - 8g. Any other pregnancy problem"
 lab var m1_8gother_et "Eth-1-8g_Other. Specify any other experience in your pregnancy so far"
 lab var m1_2_8_et "Eth-2-8. During the visit today, did the provider give you a treatment or advice for addressing these kinds of problems?"
-lab var m1_814a "814a. Could you please tell me if you have experienced Severe or persistent headaches in your pregnancy so far, or not?"
-lab var m1_814b "814b. Could you please tell me if you have experienced Vaginal bleeding of any amount in your pregnancy so far, or not?"
-lab var m1_814c "814c. Could you please tell me if you have experienced a fever in your pregnancy so far, or not?"
-lab var m1_814d "814d. Could you please tell me if you have experienced Severe abdominal pain, not just discomfort in your pregnancy so far, or not?"
-lab var m1_814e "814e. Could you please tell me if you have experienced a lot of difficulty breathing even when you are resting in your pregnancy so far, or not?"
-lab var m1_814f "814f. Could you please tell me if you have experienced Convulsions or seizures in your pregnancy so far, or not?"
-lab var m1_814g "814g. Could you please tell me if you have experienced repeated fainting or loss of consciousness in your pregnancy so far, or not?"
-lab var m1_814h "814h. Could you please tell me if you have experienced noticing that the baby has completely stopped moving in your pregnancy so far, or not?"
-lab var m1_814i "814i. Could you please tell me if you have experienced blurring of vision in your pregnancy so far, or not?"
+lab var m1_814a "814a. Have experienced Severe or persistent headaches in your pregnancy so far, or not?"
+lab var m1_814b "814b. Have experienced Vaginal bleeding of any amount in your pregnancy so far, or not?"
+lab var m1_814c "814c. Have experienced a fever in your pregnancy so far, or not?"
+lab var m1_814d "814d. Have experienced Severe abdominal pain, not just discomfort in your pregnancy so far, or not?"
+lab var m1_814e "814e. Have experienced a lot of difficulty breathing even when you are resting in your pregnancy so far, or not?"
+lab var m1_814f "814f. Have experienced Convulsions or seizures in your pregnancy so far, or not?"
+lab var m1_814g "814g. Have experienced repeated fainting or loss of consciousness in your pregnancy so far, or not?"
+lab var m1_814h "814h. Have experienced noticing that the baby has completely stopped moving in your pregnancy so far, or not?"
+lab var m1_814i "814i. Have experienced blurring of vision in your pregnancy so far, or not?"
 lab var m1_815_0 "815. Nothing, we did not discuss this"
-lab var m1_815_1 "815.Told me to come back to this health facility"
-lab var m1_815_2 "815.They told you to get a lab test or imaging (e.g., ultrasound, blood tests, x-ray, heart echo)"
-lab var m1_815_3 "815.They provided a treatment in the visit"
+lab var m1_815_1 "815. Told me to come back to this health facility"
+lab var m1_815_2 "815. They told you to get a lab test or imaging (e.g., ultrasound, blood tests, x-ray, heart echo)"
+lab var m1_815_3 "815. They provided a treatment in the visit"
 lab var m1_815_4 "815. They prescribed a medication"
 lab var m1_815_5 "815. They told you to come back to this health facility "
 lab var m1_815_6 "815. They told you to go somewhere else for higher level care"
@@ -4405,15 +5168,15 @@ lab var m1_1307 "1307. HEMOGLOBIN LEVEL FROM MATERNAL HEALTH CARD "
 lab var m1_1308 "1308. Will you take the anemia test?"
 lab var m1_1309 "1309. HEMOGLOBIN LEVEL FROM TEST PERFORMED BY DATA COLLECTOR"
 lab var m1_1401 "1401. What period of the day is most convenient for you to answer the phone survey?"
-lab var m1_1402_1_et "1402. Which is the best phone number to use to contact you: The phone provided for the study"
-lab var m1_1402_2_et "1402. Which is the best phone number to use to contact you: Primary personal phone"
-lab var m1_1402_3_et "1402. Which is the best phone number to use to contact you: Secondary personal phone"
-lab var m1_1402_4_et "1402. Which is the best phone number to use to contact you: Spouse or partner phone"
-lab var m1_1402_5_et "1402. Which is the best phone number to use to contact you: Community health worker phone"
-lab var m1_1402_6_et "1402. Which is the best phone number to use to contact you: Friend or other family member phone 1 "
-lab var m1_1402_7_et "1402. Which is the best phone number to use to contact you: Friend or other family member phone 2"
-lab var m1_1402_8_et "1402. Which is the best phone number to use to contact you: Other phone"
-lab var m1_1402_9_et "1402. Which is the best phone number to use to contact you: Does not have any phone numbers"
+lab var m1_1402_1_et "1402. The phone provided for the study"
+lab var m1_1402_2_et "1402. Primary personal phone"
+lab var m1_1402_3_et "1402. Secondary personal phone"
+lab var m1_1402_4_et "1402. Spouse or partner phone"
+lab var m1_1402_5_et "1402. Community health worker phone"
+lab var m1_1402_6_et "1402. Friend or other family member phone 1 "
+lab var m1_1402_7_et "1402. Friend or other family member phone 2"
+lab var m1_1402_8_et "1402. Other phone"
+lab var m1_1402_9_et "1402. Does not have any phone numbers"
 lab var m1_1402_888_et "1402. Unknown"
 lab var m1_1402_998_et "1402. Refuse to answer"
 lab var m1_1402_999_et "1402. No information"
@@ -4457,19 +5220,19 @@ label variable m2_204g_et "204g. Since you last spoke to us, have you experience
 label variable m2_204h_et "204h. Since you last spoke to us, have you experienced RH isoimmunization?"
 label variable m2_204i "204i. Since you last spoke to us, have you experienced any other major health problems?"
 label variable m2_204_other "204i-oth. Specify any other feeling since last visit"
-label variable m2_205a "205a. Over the past 2 weeks, on how many days have you been bothered by little interest or pleasure in doing things?"
-label variable m2_205b "205b. Over the past 2 weeks, on how many days have you been bothered by feeling down, depressed, or hopeless?"
-label variable m2_205c "205c. Over the past 2 weeks, on how many days have you been bothered by trouble falling or staying asleep, or sleeping too much?"
-label variable m2_205d "205d. Over the past 2 weeks, on how many days have you been bothered by feeling tired or having little energy?"
-label variable m2_205e "205e. Over the past 2 weeks, on how many days have you been bothered by poor appetite or overeating?"
-label variable m2_205f "205f. Over the past 2 weeks, on how many days have you been bothered by feeling bad about yourself or that you are a failure or have let yourself or your family down?"
-label variable m2_205g "205g. Over the past 2 weeks, on how many days have you been bothered by trouble concentrating on things, such as your work or home duties?"
-label variable m2_205h "205h. Over the past 2 weeks, on how many days have you been bothered by moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
-label variable m2_205i "205i. Over the past 2 weeks, on how many days have you been bothered by Thoughts that you would be better off dead, or thoughts of hurting yourself in some way?"
+label variable m2_205a "205a. How many days have you been bothered by little interest or pleasure in doing things?"
+label variable m2_205b "205b. How many days have you been bothered by feeling down, depressed, or hopeless?"
+label variable m2_205c "205c. How many days have you been bothered by trouble falling or staying asleep, or sleeping too much?"
+label variable m2_205d "205d. How many days have you been bothered by feeling tired or having little energy?"
+label variable m2_205e "205e. How many days have you been bothered by poor appetite or overeating?"
+label variable m2_205f "205f. How many days have you been bothered by feeling bad about yourself or that you are a failure or have let yourself or your family down?"
+label variable m2_205g "205g. How many days have you been bothered by trouble concentrating on things, such as your work or home duties?"
+label variable m2_205h "205h. How many days have you been bothered by moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
+label variable m2_205i "205i. How many days have you been bothered by Thoughts that you would be better off dead, or thoughts of hurting yourself in some way?"
 label variable m2_206 "206. How often do you currently smoke cigarettes or use any other type of tobacco? Types of tobacco includes: Snuff tobacco, Chewing tobacco,  Cigar"
 label variable m2_207 "207. How often do you currently chewing khat?(Interviewer: Inform that Khat is a leaf green plant use as stimulant and chewed in Ethiopia)"
 label variable m2_208 "208. How often do you currently drink alcohol or use any other type of alcoholic?   A standard drink is any drink containing about 10g of alcohol, 1 standard drink= 1 tasa or wancha of (tella or korefe or borde or shameta), ½ birile of  Tej, 1 melekiya of Areke, 1 bottle of beer, 1 single of draft, 1 melkiya of spris(Uzo, Gine, Biheraw etc) and 1 melekiya of Apratives"
-label variable m2_301 "301. Since we last spoke, did you have any new healthcare consultations for yourself, or not?"
+label variable m2_301 "301. id you have any new healthcare consultations for yourself, or not?"
 label variable m2_302 "302. Since we last spoke, how many new healthcare consultations have you had for yourself?"
 label variable m2_303a "303a. Where did this/this new first healthcare consultation(s) for yourself take place?"
 label variable m2_303b "303b.  Where did the 2nd healthcare consultation(s) for yourself take place?"
@@ -4530,41 +5293,41 @@ label variable m2_316_3 "316. Was the fourth consultation for any of the followi
 label variable m2_316_4 "316. Was the fourth consultation for any of the following? To pick up medicine"
 label variable m2_316_5 "316. Was the fourth consultation for any of the following? To get a vaccine"
 label variable m2_316_96 "316. Was the fourth onsultation for any of the following? Other reasons"
-label variable m2_314_888_et "316. No information"
-label variable m2_314_998_et "316. Unknown"
-label variable m2_314_999_et "316. Refuse to answer"
+label variable m2_316_888_et "316. No information"
+label variable m2_316_998_et "316. Unknown"
+label variable m2_316_999_et "316. Refuse to answer"
 label variable m2_316_other "316-oth. Specify other reason for the fourth consultation"
 label variable m2_317 "317. Was the fifth consultation is for a routine antenatal care visit?"
 label variable m2_318 "318. Was the fifth consultation is for a referral from your antenatal care provider?"
-label variable m2_317_1 "319. Was the fifth consultation is for any of the following? A new health problem, including an emergency or an injury"
-label variable m2_317_2 "319. Was the fifth consultation is for any of the following? An existing health problem"
-label variable m2_317_3 "319. Was the fifth consultation is for any of the following? A lab test, x-ray, or ultrasound"
-label variable m2_317_4 "319. Was the fifth consultation is for any of the following? To pick up medicine"
-label variable m2_317_5 "319. Was the fifth consultation is for any of the following? To get a vaccine"
-label variable m2_317_96 "319. Was the fifth consultation is for any of the following? Other reasons"
-label variable m2_317_888_et "319. No information"
-label variable m2_317_998_et "319. Unknown"
-label variable m2_317_999_et "319. Refuse to answer"
+label variable m2_319_1 "319. Was the fifth consultation is for any of the following? A new health problem, including an emergency or an injury"
+label variable m2_319_2 "319. Was the fifth consultation is for any of the following? An existing health problem"
+label variable m2_319_3 "319. Was the fifth consultation is for any of the following? A lab test, x-ray, or ultrasound"
+label variable m2_319_4 "319. Was the fifth consultation is for any of the following? To pick up medicine"
+label variable m2_319_5 "319. Was the fifth consultation is for any of the following? To get a vaccine"
+label variable m2_319_96 "319. Was the fifth consultation is for any of the following? Other reasons"
+label variable m2_319_888_et "319. No information"
+label variable m2_319_998_et "319. Unknown"
+label variable m2_319_999_et "319. Refuse to answer"
 label variable m2_319_other "319-oth. Specify other reason for the fifth consultation"
-label variable m2_320_a "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? No reason or you didn't need it"
-label variable m2_320_b "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? You tried but were sent away (e.g., no appointment available) "
-label variable m2_320_c "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? High cost (e.g., high out of pocket payment, not covered by insurance)"
-label variable m2_320_d "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Far distance (e.g., too far to walk or drive, transport not readily available)"
-label variable m2_320_e "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Long waiting time (e.g., long line to access facility, long wait for the provider)"
-label variable m2_320_f "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Poor healthcare provider skills (e.g., spent too little time with patient, did not conduct a thorough exam)"
-label variable m2_320_g "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Staff don't show respect (e.g., staff is rude, impolite, dismissive)"
-label variable m2_320_h "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Medicines or equipment are not available (e.g., medicines regularly out of stock, equipment like X-ray machines broken or unavailable)"
-label variable m2_320_i "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 restrictions (e.g., lockdowns, travel restrictions, curfews) "
-label variable m2_320_j "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 fear"
-label variable m2_320_k "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Don't know where to go/too complicated"
-label variable m2_320_l "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Fear of discovering serious problem"
+label variable m2_320_0 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? No reason or you didn't need it"
+label variable m2_320_1 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? You tried but were sent away (e.g., no appointment available) "
+label variable m2_320_2 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? High cost (e.g., high out of pocket payment, not covered by insurance)"
+label variable m2_320_3 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Far distance (e.g., too far to walk or drive, transport not readily available)"
+label variable m2_320_4 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Long waiting time (e.g., long line to access facility, long wait for the provider)"
+label variable m2_320_5 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Poor healthcare provider skills (e.g., spent too little time with patient, did not conduct a thorough exam)"
+label variable m2_320_6 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Staff don't show respect (e.g., staff is rude, impolite, dismissive)"
+label variable m2_320_7 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Medicines or equipment are not available (e.g., medicines regularly out of stock, equipment like X-ray machines broken or unavailable)"
+label variable m2_320_8 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 restrictions (e.g., lockdowns, travel restrictions, curfews) "
+label variable m2_320_9 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 fear"
+label variable m2_320_10 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Don't know where to go/too complicated"
+label variable m2_320_11 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Fear of discovering serious problem"
 label variable m2_320_96 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Other, specify"
 label variable m2_320_99 "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Refused"
 label variable m2_320_888_et "320. No information"
 label variable m2_320_998_et "320. Unknown"
 label variable m2_320_999_et "320. Refuse to answer"
 label variable m2_320_other "320-oth. Specify other reason preventing receiving more antenatal care"
-label variable m2_321 "321. Other than in-person visits, did you have contacted with a health care provider by phone, SMS, or web regarding your pregnancy?"
+label variable m2_321 "321. Other than in-person visits, did you have contacted by phone, SMS, or web regarding your pregnancy?"
 label variable m2_401 "401. Overall, how would you rate the quality of care that you received from the health facility where you took the 1st consultation?"
 label variable m2_402 "402. Overall, how would you rate the quality of care that you received from the health facility where you took the 2nd consultation?"
 label variable m2_403 "403. Overall, how would you rate the quality of care that you received from the health facility where you took the 3rd consultation?"
@@ -4578,7 +5341,7 @@ label variable m2_501e "501e.  Since you last spoke to us, did you get a urine t
 label variable m2_501f "501f. Since you last spoke to us, did you get an ultrasound (that is, when a probe is moved on your belly to produce a video of the baby on a screen)?"
 label variable m2_501g "501g.  Since you last spoke to us, did you get any other tests?"
 label variable m2_501g_other "501g-oth. Specify any other test you took since you last spoke to us"
-label variable m2_502 "502. Since we last spoke, did you receive any new test results from a health care provider?   By that I mean, any result from a blood or urine sample or from blood pressure measurement.Do not include any results that were given to you during your first antenatal care visit or during the first survey, only new ones."
+label variable m2_502 "502. id you receive any new test results from a health care provider?   By that I mean, any result from a blood or urine sample or from blood pressure measurement.Do not include any results that were given to you during your first antenatal care visit or during the first survey, only new ones."
 label variable m2_503a "503a. Remember that this information will remain confidential. Did you receive a result for Anemia?"
 label variable m2_503b "503b. Remember that this information will remain confidential. Did you receive a result for HIV?"
 label variable m2_503c "503c. Remember that this information will remain confidential. Did you receive a result for HIV viral load?"
@@ -4599,14 +5362,14 @@ label variable m2_506b "506b. Since you last spoke to us, did you and a healthca
 label variable m2_506c "506c. Since you last spoke to us, did you and a healthcare provider discuss about care for the newborn when he or she is born such as warmth, hygiene, breastfeeding, or the importance of postnatal care?"
 label variable m2_506d "506d. Since you last spoke to us, did you and a healthcare provider discuss about family planning options for after delivery?"
 label variable m2_507 "507. What did the health care provider tell you to do regarding these new symptoms?"
-label variable m2_508a "508a. Since we last spoke, did you have a session of psychological counseling or therapy with any type of professional?  This could include seeing a mental health professional (like a phycologist, social worker, nurse, spiritual advisor or healer) for problems with your emotions or nerves."
-label variable m2_508b_number "508b. Do you know the number of psychological counseling or therapy session you had?"
-label variable m2_508b_last "508b. How many of these sessions did you have since you last spoke to us?"
-label variable m2_508c "508c. Do you know how long this/these visits took?"
-label variable m2_508d "508d. How many minutes did this/these visit(s) last on average?"
-label variable m2_509a "509a.  Since we last spoke, did a healthcare provider tells you that you needed to go see a specialist like an obstetrician or a gynecologist?"
-label variable m2_509b "509b. Since we last spoke, did a healthcare provider tells you that you needed to go to the hospital for follow-up antenatal care?"
-label variable m2_509c "509c. Since we last spoke, did a healthcare provider tell you that you will need a C-section?"
+label variable m2_508a "508a. id you have a session of psychological counseling or therapy with any type of professional?  This could include seeing a mental health professional (like a phycologist, social worker, nurse, spiritual advisor or healer) for problems with your emotions or nerves."
+label variable m2_508b_yn "508b. Do you know the number of psychological counseling or therapy session you had?"
+label variable m2_508b_num "508b. How many of these sessions did you have since you last spoke to us?"
+label variable m2_508c_yn "508c. Do you know how long this/these visits took?"
+label variable m2_508c_time "508d. How many minutes did this/these visit(s) last on average?"
+label variable m2_509a "509a.  id a healthcare provider tells you that you needed to go see a specialist like an obstetrician or a gynecologist?"
+label variable m2_509b "509b. id a healthcare provider tells you that you needed to go to the hospital for follow-up antenatal care?"
+label variable m2_509c "509c. id a healthcare provider tell you that you will need a C-section?"
 label variable m2_601a "601a. Did you get Iron or folic acid pills?"
 label variable m2_601b "601b. Did you get Calcium pills?"
 label variable m2_601c "601c. Did you get Multivitamins?"
@@ -4628,18 +5391,18 @@ label variable m2_603 "603. Are you currently taking iron and folic acid pills, 
 label variable m2_604 "604. How often do you take iron and folic acid pills?"
 label variable m2_701 "701. I would now like to ask about the cost of these new health care visits.  Did you pay any money out of your pocket for these new visits, including for the consultation or other indirect costs like your transport to the facility?  Do not include the cost of medicines that you have already told me about."
 label variable m2_702a "702a. Did you spend money on Registration/Consultation?"
-label variable m2_702a_other "702a-oth. How much money did you spend on Registration/Consultation?"
+label variable m2_702a_cost "702a-oth. How much money did you spend on Registration/Consultation?"
 label variable m2_702b "702b. Did you spend money on Test or investigations (lab tests, ultrasound etc.?"
-label variable m2_702b_other "702b-oth. How much money did you spend on Test or investigations (lab tests, ultrasound etc.)"
+label variable m2_702b_cost "702b-oth. How much money did you spend on Test or investigations (lab tests, ultrasound etc.)"
 label variable m2_702c "702c. Did you spend money on Transport (round trip) including that of the person accompanying you?"
-label variable m2_702c_other "702c-oth. How much money did you spend on Transport (round trip) including that of the person accompanying you?"
+label variable m2_702c_cost "702c-oth. How much money did you spend on Transport (round trip) including that of the person accompanying you?"
 label variable m2_702d "702d. Did you spend money on Food and accommodation including that of person accompanying you?"
-label variable m2_702d_other "702d-oth. How much money did you spend on Food and accommodation including that of person accompanying you?"
+label variable m2_702d_cost "702d-oth. How much money did you spend on Food and accommodation including that of person accompanying you?"
 label variable m2_702e "702e. Did you spend money for other services?"
-label variable m2_702e_other "702e-oth. How much money did you spend on other item/service?"
+label variable m2_702e_cost "702e-oth. How much money did you spend on other item/service?"
 label variable m2_703 "703. So, in total you spent"
 label variable m2_704 "704. Is the total cost correct?"
-label variable m2_704_other "704-oth. So how much in total would you say you spent?"
+label variable m2_704_confirm "704-oth. So how much in total would you say you spent?"
 label variable m2_705_1 "705. Which of the following financial sources did your household use to pay for this? Current income of any household members"
 label variable m2_705_2 "705. Which of the following financial sources did your household use to pay for this? Savings (e.g., bank account)"
 label variable m2_705_3 "705. Which of the following financial sources did your household use to pay for this? Payment or reimbursement from a health insurance plan"
@@ -4688,44 +5451,44 @@ label variable m3_baby3_size "308c. When the third baby was born, were they: ver
 label variable m3_baby1_health "309a. In general, how would you rate the first baby's overall health?"
 label variable m3_baby2_health "309b. In general, how would you rate the second baby's overall health?"
 label variable m3_baby3_health "309c. In general, how would you rate the third baby's overall health?"
-label variable m3_baby1_feed_a "310a.1. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days? Indicate all that apply. (choice=Breast milk)"
-label variable m3_baby1_feed_b "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days? Indicate all that apply. (choice=Formula/Cow milk)"
-label variable m3_baby1_feed_c "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days? Indicate all that apply. (choice=Water)"
-label variable m3_baby1_feed_d "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days? Indicate all that apply. (choice=Juice)"
-label variable m3_baby1_feed_e "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days? Indicate all that apply. (choice=Broth)"
-label variable m3_baby1_feed_f "310a. People feed their babies in different ways. Please indicate how you have fed the first babyin the last 7 days? Indicate all that apply. (choice=Baby food)"
-label variable m3_baby1_feed_g "310a. People feed their babies in different ways. Please indicate how you have fed [what_is_the_1st_baby_name] in the last 7 days? Indicate all that apply. (choice=Local food)"
-label variable m3_baby1_feed_96 "310a. People feed their babies in different ways. Please indicate how you have fed [what_is_the_1st_baby_name] in the last 7 days? Indicate all that apply. (choice=Other, specify)"
-label variable m3_baby1_feed_99 "310a. People feed their babies in different ways. Please indicate how you have fed [what_is_the_1st_baby_name] in the last 7 days? Indicate all that apply. (choice=NR/RF)"
-label variable m3_baby1_feed_998 "310a. People feed their babies in different ways. Please indicate how you have fed [what_is_the_1st_baby_name] in the last 7 days? Indicate all that apply. (choice=Unknown)"
-label variable m3_baby1_feed_999 "310a. People feed their babies in different ways. Please indicate how you have fed [what_is_the_1st_baby_name] in the last 7 days? Indicate all that apply. (choice=Refuse to answer)"
-label variable m3_baby1_feed_888 "310a. People feed their babies in different ways. Please indicate how you have fed [what_is_the_1st_baby_name] in the last 7 days? Indicate all that apply. (choice=No Information)"
+label variable m3_baby1_feed_a "310a.1. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days?. (choice=Breast milk)"
+label variable m3_baby1_feed_b "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days?. (choice=Formula/Cow milk)"
+label variable m3_baby1_feed_c "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days?. (choice=Water)"
+label variable m3_baby1_feed_d "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days?. (choice=Juice)"
+label variable m3_baby1_feed_e "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days?. (choice=Broth)"
+label variable m3_baby1_feed_f "310a. People feed their babies in different ways. Please indicate how you have fed the first baby in the last 7 days?. (choice=Baby food)"
+label variable m3_baby1_feed_g "310a. People feed their babies in different ways. Please indicate how you have fed first baby in the last 7 days?. (choice=Local food)"
+label variable m3_baby1_feed_96 "310a. People feed their babies in different ways. Please indicate how you have fed first baby in the last 7 days?. (choice=Other, specify)"
+label variable m3_baby1_feed_99 "310a. People feed their babies in different ways. Please indicate how you have fed first baby in the last 7 days?. (choice=NR/RF)"
+label variable m3_baby1_feed_998 "310a. People feed their babies in different ways. Please indicate how you have fed first baby in the last 7 days?. (choice=Unknown)"
+label variable m3_baby1_feed_999 "310a. People feed their babies in different ways. Please indicate how you have fed first baby in the last 7 days?. (choice=Refuse to answer)"
+label variable m3_baby1_feed_888 "310a. People feed their babies in different ways. Please indicate how you have fed first baby in the last 7 days?. (choice=No Information)"
 label variable m3_baby1_feed_other "310a_Oth. Other specify"
-label variable m3_baby2_feed_a "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Breast milk)"
-label variable m3_baby2_feed_b "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Formula/Cow milk)"
-label variable m3_baby2_feed_c "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Water)"
-label variable m3_baby2_feed_d "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Juice)"
-label variable m3_baby2_feed_e "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply.(choice=Broth)"
-*label variable m3_baby2_feed_f "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Baby food)"
-label variable m3_baby2_feed_g "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Local food)"
-label variable m3_baby2_feed_96 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Other, specify)"
-label variable m3_baby2_feed_99 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=NR/RF)"
-label variable m3_baby2_feed_998 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Unknown)"
-label variable m3_baby2_feed_999 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=Refuse to answer)"
-label variable m3_baby2_feed_888 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days? Indicate all that apply. (choice=No Information)"
+label variable m3_baby2_feed_a "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Breast milk)"
+label variable m3_baby2_feed_b "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Formula/Cow milk)"
+label variable m3_baby2_feed_c "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Water)"
+label variable m3_baby2_feed_d "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Juice)"
+label variable m3_baby2_feed_e "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?.(choice=Broth)"
+*label variable m3_baby2_feed_f "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Baby food)"
+label variable m3_baby2_feed_g "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Local food)"
+label variable m3_baby2_feed_96 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Other, specify)"
+label variable m3_baby2_feed_99 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=NR/RF)"
+label variable m3_baby2_feed_998 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Unknown)"
+label variable m3_baby2_feed_999 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=Refuse to answer)"
+label variable m3_baby2_feed_888 "310a. People feed their babies in different ways. Please indicate how you have fed the second baby in the last 7 days?. (choice=No Information)"
 label variable m3_baby2_feed_other "310a_Oth. Other specify"
-label variable m3_baby3_feed_a "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Breast milk)"
-label variable m3_baby3_feed_b "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Formula/Cow milk)"
-label variable m3_baby3_feed_c "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Water)"
-label variable m3_baby3_feed_d "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Juice)"
-label variable m3_baby3_feed_e "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Broth)"
-*label variable m3_baby3_feed_f "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Baby food)"
-label variable m3_baby3_feed_g "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Local food/butter)"
-label variable m3_baby3_feed_96 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Other, specify)"
-label variable m3_baby3_feed_99 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=NR/RF)"
-label variable m3_baby3_feed_998 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Unknown)"
-label variable m3_baby3_feed_999 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=Refuse to answer)"
-label variable m3_baby3_feed_888 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days? Indicate all that apply. (choice=No Information)"
+label variable m3_baby3_feed_a "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Breast milk)"
+label variable m3_baby3_feed_b "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Formula/Cow milk)"
+label variable m3_baby3_feed_c "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Water)"
+label variable m3_baby3_feed_d "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Juice)"
+label variable m3_baby3_feed_e "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Broth)"
+*label variable m3_baby3_feed_f "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Baby food)"
+label variable m3_baby3_feed_g "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Local food/butter)"
+label variable m3_baby3_feed_96 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Other, specify)"
+label variable m3_baby3_feed_99 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=NR/RF)"
+label variable m3_baby3_feed_998 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Unknown)"
+label variable m3_baby3_feed_999 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=Refuse to answer)"
+label variable m3_baby3_feed_888 "310a. People feed their babies in different ways. Please indicate how you have fed the third baby in the last 7 days?. (choice=No Information)"
 label variable m3_baby3_feed_other "310a_Oth. Other specify"
 label variable m3_breastfeeding "310b. As of today, how confident do you feel about breastfeeding your baby/babies?"
 label variable m3_breastfeeding_fx_et "Eth 1-3. How often per day in average your baby  or babies breastfed?"
@@ -4949,9 +5712,9 @@ label variable m3_616c "616c. How long in hour after delivery was the third baby
 label variable m3_617a "617a. Did the first baby receive a vaccine for BCG while you were still in the facility? That is an injection in the arm that can sometimes cause a scar"
 label variable m3_617b "617b. Did the second baby receive a vaccine for BCG while you were still in the facility?"
 label variable m3_617c "617c. Did the 3rd baby receive a vaccine for BCG while you were still in the facility? That is an injection in the arm that can sometimes cause a scar."
-label variable m3_617d_et "Eth-6-6a. Did the first baby receive an injection [vaccine] on thigh? That I mean is a vitamin K injection?"
-label variable m3_617e_et "Eth-6-6b. Did the second baby receive an injection [vaccine] on thigh? That I mean is a vitamin K injection?"
-label variable m3_617f_et "Eth-6-6c. Did the third baby receive an injection [vaccine] on thigh? That I mean is a vitamin K injection?"
+label variable m3_617d_et "Eth-6-6a. Did the first baby receive an injection (vaccine) on thigh? That I mean is a vitamin K injection?"
+label variable m3_617e_et "Eth-6-6b. Did the second baby receive an injection (vaccine) on thigh? That I mean is a vitamin K injection?"
+label variable m3_617f_et "Eth-6-6c. Did the third baby receive an injection (vaccine) on thigh? That I mean is a vitamin K injection?"
 label variable m3_617g_et "Eth-7-6a. Did the first baby receive eye ointment?"
 label variable m3_617h_et "Eth-7-6b. Did the second baby receive eye ointment?"
 label variable m3_617i_et "Eth-7-6c. Did the third baby receive eye ointment?"
@@ -5052,8 +5815,8 @@ label variable m3_710c "710c. Did the third baby spend time in a special care nu
 label variable m3_711a "711a. How long in hours did the first baby stay at the health facility after being born?"
 label variable m3_711b "711b. How long in hours did the second baby stay at the health facility after being born?"
 label variable m3_711c "711c. How long in hours did the third baby stay at the health facility after being born?"
-label variable m3_801a "801a. Over the past 2 weeks, on how many days have you been bothered little interest or pleasure in doing things?"
-label variable m3_801b "801b. Over the past 2 weeks, on how many days have you been bothered feeling down, depressed, or hopeless in doing things?"
+label variable m3_801a "801a. How many days have you been bothered little interest or pleasure in doing things?"
+label variable m3_801b "801b. How many days have you been bothered feeling down, depressed, or hopeless in doing things?"
 label variable m3_802a "802a. Since you last spoke to us, did you have a session of psychological counseling or therapy with any type of professional?  This could include seeing a mental health professional (like a phycologist, social worker, nurse, spiritual advisor or healer) for problems with your emotions or nerves?"
 label variable m3_802b "802b. How many of these sessions did you have since you last spoke to us?"
 label variable m3_802c "802c. How many minutes did this/these visit(s) last on average?"
@@ -5076,23 +5839,23 @@ label variable m3_808b "808b. Why have you not sought treatment?"
 label variable m3_808b_other "808b_Oth. Specify other reasons why have you not sought treatment"
 label variable m3_809 "809. Did the treatment stop the problem?"
 label variable m3_901a "901a. Since last spoke, did you get iron or folic acid pills for yourself?"
-label variable m3_901b "901b. Since we last spoke, did you get iron injection?"
-label variable m3_901c "901c. Since we last spoke, did you get calcium pills?"
-label variable m3_901d "901d. Since we last spoke, did you get multivitamins?"
-label variable m3_901e "901e. Since we last spoke, did you get food supplements like Super Cereal or Plumpynut?"
-label variable m3_901f "901f. Since we last spoke, did you get medicine for intestinal worms [endemic areas]?"
-label variable m3_901g "901g. Since we last spoke, did you get medicine for malaria [endemic areas]?"
-label variable m3_901h "901h. Since we last spoke, did you get Medicine for HIV?"
-label variable m3_901i "901i. Since we last spoke, did you get medicine for your emotions, nerves, depression, or mental health?"
-label variable m3_901j "901j. Since we last spoke, did you get medicine for hypertension?"
-label variable m3_901k "901k. Since we last spoke, did you get medicine for diabetes, including injections of insulin?"
-label variable m3_901l "901l. Since we last spoke, did you get antibiotics for an infection?"
-label variable m3_901m "901m. Since we last spoke, did you get aspirin?"
-label variable m3_901n "901n. Since we last spoke, did you get paracetamol, or other pain relief drugs?"
-label variable m3_901o "901o. Since we last spoke, did you get contraceptive pills?"
-label variable m3_901p "901p. Since we last spoke, did you get contraceptive injection?"
-label variable m3_901q "901q. Since we last spoke, did you get other contraception method?"
-label variable m3_901r "901r. Since we last spoke, did you get any other medicine or supplement?"
+label variable m3_901b "901b. id you get iron injection?"
+label variable m3_901c "901c. id you get calcium pills?"
+label variable m3_901d "901d. id you get multivitamins?"
+label variable m3_901e "901e. id you get food supplements like Super Cereal or Plumpynut?"
+label variable m3_901f "901f. id you get medicine for intestinal worms?"
+label variable m3_901g "901g. id you get medicine for malaria?"
+label variable m3_901h "901h. id you get Medicine for HIV?"
+label variable m3_901i "901i. id you get medicine for your emotions, nerves, depression, or mental health?"
+label variable m3_901j "901j. id you get medicine for hypertension?"
+label variable m3_901k "901k. id you get medicine for diabetes, including injections of insulin?"
+label variable m3_901l "901l. id you get antibiotics for an infection?"
+label variable m3_901m "901m. id you get aspirin?"
+label variable m3_901n "901n. id you get paracetamol, or other pain relief drugs?"
+label variable m3_901o "901o. id you get contraceptive pills?"
+label variable m3_901p "901p. id you get contraceptive injection?"
+label variable m3_901q "901q. id you get other contraception method?"
+label variable m3_901r "901r. id you get any other medicine or supplement?"
 label variable m3_901r_other "901s_Oth. Specify other treatment you took"
 label variable m3_902a_baby1 "902a. Since they were born, did the first baby get iron supplements?"
 label variable m3_902a_baby2 "902a. Since they were born, did the second baby get iron supplements?"
@@ -5115,9 +5878,9 @@ label variable m3_902f_baby3 "902f. Since they were born, did the third baby get
 label variable m3_902g_baby1 "902g. Since they were born, did the first baby get medicine to prevent pneumonia?"
 label variable m3_902g_baby2 "902g. Since they were born, did the second baby get medicine to prevent pneumonia?"
 label variable m3_902g_baby3 "902g. Since they were born, did the third baby get medicine to prevent pneumonia?"
-label variable m3_902h_baby1 "902h. Since they were born, did the first baby get medicine for malaria [endemic areas]?"
-label variable m3_902h_baby2 "902h. Since they were born, did the second baby get medicine for malaria [endemic areas]?"
-label variable m3_902h_baby3 "902h. Since they were born, did the third baby get medicine for malaria [endemic areas]?"
+label variable m3_902h_baby1 "902h. Since they were born, did the first baby get medicine for malaria?"
+label variable m3_902h_baby2 "902h. Since they were born, did the second baby get medicine for malaria?"
+label variable m3_902h_baby3 "902h. Since they were born, did the third baby get medicine for malaria?"
 label variable m3_902i_baby1 "902i. Since they were born, did the first baby get medicine for HIV (HIV+ mothers only)?"
 label variable m3_902i_baby2 "902i. Since they were born, did the second baby get medicine for HIV (HIV+ mothers only)?"
 label variable m3_902i_baby3 "902i. Since they were born, did the third baby get medicine for HIV (HIV+ mothers only)?"
@@ -5170,7 +5933,7 @@ label variable m3_1102f "1102f. Did you spend money on other items?"
 label variable m3_1102f_amt "1102f. How much money did you spend on other items?"
 label variable m3_1103 "1103. So in total you spent:_____ Is that correct?"
 label variable m3_1103_confirm "Is the total you spent correct? "
-label variable m3_1104 "1104. So how much in total would you say you spent?"
+label variable m3_1102_total "So how much in total would you say you spent?"
 label variable m3_1105 "1105. Which of the following financial sources did your household use to pay for this?"
 label variable m3_1105_other "1105_Oth. Other specify"
 label variable m3_1106 "1106. To conclude this survey, overall, please tell me how satisfied you are  with the health services you received during labor and delivery?"
@@ -5210,30 +5973,30 @@ label variable m4_baby3_status "201. I would like to start by asking some questi
 label variable m4_baby1_health "202. In general, how would you rate 1st baby's overall health?"
 label variable m4_baby2_health "202. In general, how would you rate 2nd baby's overall health?"
 label variable m4_baby3_health "202. In general, how would you rate 3rd baby's overall health?"
-label variable m4_baby1_feed_a "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - BREAST MILK"
-label variable m4_baby1_feed_b "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - FORMULA"
-label variable m4_baby1_feed_c "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - WATER"
-label variable m4_baby1_feed_d "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - JUICE"
-label variable m4_baby1_feed_e "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - BROTH"
-label variable m4_baby1_feed_f "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - BABY FOOD"
-label variable m4_baby1_feed_g "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? Indicate all that apply - LOCAL FOOD"
+label variable m4_baby1_feed_a "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - BREAST MILK"
+label variable m4_baby1_feed_b "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - FORMULA"
+label variable m4_baby1_feed_c "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - WATER"
+label variable m4_baby1_feed_d "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - JUICE"
+label variable m4_baby1_feed_e "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - BROTH"
+label variable m4_baby1_feed_f "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - BABY FOOD"
+label variable m4_baby1_feed_g "203. People feed their babies in different ways. Please indicate how you have fed 1st baby in the last 7 days? - LOCAL FOOD"
 
 
-label variable m4_baby2_feed_a "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - BREAST MILK"
-label variable m4_baby2_feed_b "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - FORMULA"
-label variable m4_baby2_feed_c "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - WATER"
-label variable m4_baby2_feed_d "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - JUICE"
-label variable m4_baby2_feed_e "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - BROTH"
-label variable m4_baby2_feed_f "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - BABY FOOD"
-label variable m4_baby2_feed_g "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? Indicate all that apply - LOCAL FOOD"
+label variable m4_baby2_feed_a "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - BREAST MILK"
+label variable m4_baby2_feed_b "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - FORMULA"
+label variable m4_baby2_feed_c "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - WATER"
+label variable m4_baby2_feed_d "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - JUICE"
+label variable m4_baby2_feed_e "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - BROTH"
+label variable m4_baby2_feed_f "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - BABY FOOD"
+label variable m4_baby2_feed_g "203. People feed their babies in different ways. Please indicate how you have fed 2nd baby in the last 7 days? - LOCAL FOOD"
 
-label variable m4_baby3_feed_a "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - BREAST MILK"
-label variable m4_baby3_feed_b "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - FORMULA"
-label variable m4_baby3_feed_c "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - WATER"
-label variable m4_baby3_feed_d "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - JUICE"
-label variable m4_baby3_feed_e "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - BROTH"
-label variable m4_baby3_feed_f "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - BABY FOOD"
-label variable m4_baby3_feed_g "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? Indicate all that apply - LOCAL FOOD"
+label variable m4_baby3_feed_a "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - BREAST MILK"
+label variable m4_baby3_feed_b "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - FORMULA"
+label variable m4_baby3_feed_c "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - WATER"
+label variable m4_baby3_feed_d "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - JUICE"
+label variable m4_baby3_feed_e "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - BROTH"
+label variable m4_baby3_feed_f "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - BABY FOOD"
+label variable m4_baby3_feed_g "203. People feed their babies in different ways. Please indicate how you have fed 3rd baby in the last 7 days? - LOCAL FOOD"
 
 label variable m4_203d_et "203. On average how frequently do you breastfeed your baby per day (Ethiopia only)" 
 label variable m4_204a "204. As of today, how confident do you feel about breastfeeding your baby?" 
@@ -5376,9 +6139,9 @@ label variable m4_baby3_death_loc "212. Where did your 3rd baby die?"
 *---------------- Section 3: Health - Woman -------*
 label variable m4_301 "301. I would like to talk about your own health since you last spoke to us. In general, how would you rate your overall health?"
 
-label variable m4_302a "302A. I am now going to ask some more questions about your health since you delivered. Over the past 2 weeks, on how many days have you been bothered little interest or pleasure in doing things?"
+label variable m4_302a "302A. I am now going to ask some more questions about your health since you delivered. How many days have you been bothered little interest or pleasure in doing things?"
 
-label variable m4_302b "302B. Over the past 2 weeks, on how many days have you been bothered feeling down, depressed, or hopeless in doing things?"
+label variable m4_302b "302B. How many days have you been bothered feeling down, depressed, or hopeless in doing things?"
 
 label variable m4_303a "303A. Please tell me what best describes how you have felt about your baby loving?"
 
@@ -5412,9 +6175,9 @@ label variable m4_309_other "309-other. Other reason, specify."
 
 label variable m4_310 "310. Did the treatment stop the problem?"
 
-label variable m4_401a "401A. Since we last spoke, did you or your baby have any new health care consultations, or not?"
+label variable m4_401a "401A. id you or your baby have any new health care consultations, or not?"
 
-label variable m4_401b "401B. Since we last spoke, did you have any new health care consultations, or not?"
+label variable m4_401b "401B. id you have any new health care consultations, or not?"
 
 label variable m4_402 "402. Since we last spoke, how many new healthcare consultations did you have?"
 
@@ -5443,95 +6206,95 @@ label variable m4_404c_other_1 "404C-other.1. Specify other facility for the 3rd
 
 label variable m4_404c_other_2 "404C-other.2. Specify other facility for the 3rd consultation outside East Shewa or Adama?" 
 
-label variable m4_405 "405. Was the 1st new consultation for a routine or regular checkup after the delivery?"
+label variable m4_405a "405. Was the 1st new consultation for a routine or regular checkup after the delivery?"
 
-label variable m4_406a "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_1 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406b "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_2 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406c "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_3 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406d "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_4 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406e "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_5 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406f "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_6 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406g "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_7 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406h "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_8 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406i "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_9 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406j "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_10 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406_96 "406. Was this 1st consultation for any of the following? Please tell me all that apply."
+label variable m4_405a_96 "406. Was this 1st consultation for any of the following?"
 
-label variable m4_406_other "406-Other.Specify other reasons why the 1st consultation was."
+label variable m4_405a_other "406-Other.Specify other reasons why the 1st consultation was."
 
-label variable m4_407 "407. Was the 2nd new consultation for a routine or regular checkup after the delivery?"
+label variable m4_405b "407. Was the 2nd new consultation for a routine or regular checkup after the delivery?"
 
-label variable m4_408a "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_1 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408b "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_2 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408c "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_3 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408d "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_4 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408e "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_5 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408f "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_6 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408g "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_7 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408h "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_8 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408i "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_9 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408j "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_10 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408_96 "408. Was this 2nd consultation for any of the following? Please tell me all that apply."
+label variable m4_405b_96 "408. Was this 2nd consultation for any of the following?"
 
-label variable m4_408_other "408-Other. Specify other reason why the 2nd consultation was"
+label variable m4_405b_other "408-Other. Specify other reason why the 2nd consultation was"
 
-label variable m4_409 "409. Was the 3rd new consultation is for a routine or regular checkup after the delivery?"
+label variable m4_405c "409. Was the 3rd new consultation is for a routine or regular checkup after the delivery?"
 
-label variable m4_410a "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_1 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410b "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_2 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410c "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_3 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410d "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_4 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410e "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_5 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410f "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_6 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410g "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_7 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410h "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_8 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410i "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_9 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410j "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_10 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410_96 "410. Was this 3rd consultation for any of the following? Please tell me all that apply."
+label variable m4_405c_96 "410. Was this 3rd consultation for any of the following?"
 
-label variable m4_410_other "510-Other. Specify other reason why the 3rd consultation was"
+label variable m4_405c_other "510-Other. Specify other reason why the 3rd consultation was"
 
-label variable m4_411a "411A. On what day did the 1st new consultation take place? (D-M-Y) ?"
+label variable m4_411a "411A. On what day did the 1st new consultation take place? (D-M-Y)?"
 
-label variable m4_411b "411B. On what day did the 2nd new consultation take place? (D-M-Y) ?"
+label variable m4_411b "411B. On what day did the 2nd new consultation take place? (D-M-Y)?"
 
-label variable m4_411c "411C. On what day did the 2nd new consultation take place? (D-M-Y) ?"
+label variable m4_411c "411C. On what day did the 2nd new consultation take place? (D-M-Y)?"
 
-label variable m4_412a "412A. Approximately how long days after the delivery did this 1st new visit take place ?"
+label variable m4_412a "412A. Approximately how long days after the delivery did this 1st new visit take place?"
 
-label variable m4_412b "412B. Approximately how long days after the delivery did this 1st new visit take place ?"
+label variable m4_412b "412B. Approximately how long days after the delivery did this 1st new visit take place?"
 
-label variable m4_412c "412C. Approximately how long days after the delivery did this 1st new visit take place ?"
+label variable m4_412c "412C. Approximately how long days after the delivery did this 1st new visit take place?"
 
 label variable m4_413a "413. Are there any reasons that prevented you from receiving postnatal or postpartum care since the delivery? Tell me all reasons, if any, that apply. "
 
@@ -5567,64 +6330,64 @@ label variable m4_502 "502. Overall, how would you rate the quality of care that
 
 label variable m4_503 "503. Overall, how would you rate the quality of care that you received at the 3rd new healthcare consultation facility?"
 
-label variable m4_baby1_601a "601A.1. Since the delivery, did your 1st baby receive their temperature taken (using a thermometer)?"
+label variable m4_baby1_601a "601A.1. Did your 1st baby receive their temperature taken (using a thermometer)?"
 
-label variable m4_baby2_601a "601A.2. Since the delivery, did your 2nd baby receive their temperature taken (using a thermometer)?"
+label variable m4_baby2_601a "601A.2. Did your 2nd baby receive their temperature taken (using a thermometer)?"
 
-label variable m4_baby3_601a "601A.3. Since the delivery, did your 3rd baby receive their temperature taken (using a thermometer)?"
+label variable m4_baby3_601a "601A.3. Did your 3rd baby receive their temperature taken (using a thermometer)?"
 
-label variable m4_baby1_601b "601B.1. Since the delivery, did your 1st baby receive their weight taken (using a scale)?"
+label variable m4_baby1_601b "601B.1. Did your 1st baby receive their weight taken (using a scale)?"
 
-label variable m4_baby2_601b "601B.2. Since the delivery, did your 2nd baby receive their weight taken (using a scale)?"
+label variable m4_baby2_601b "601B.2. Did your 2nd baby receive their weight taken (using a scale)?"
 
-label variable m4_baby3_601b "601B.3. Since the delivery, did your 3rd baby receive their weight taken (using a scale)?"
+label variable m4_baby3_601b "601B.3. Did your 3rd baby receive their weight taken (using a scale)?"
 
-label variable m4_baby1_601c "601C.1. Since the delivery, did your 1st baby receive their length measured (using a measuring tape)?"
+label variable m4_baby1_601c "601C.1. Did your 1st baby receive their length measured (using a measuring tape)?"
 
-label variable m4_baby2_601c "601C.2. Since the delivery, did your 2nd baby receive their length measured (using a measuring tape)?"
+label variable m4_baby2_601c "601C.2. Did your 2nd baby receive their length measured (using a measuring tape)?"
 
-label variable m4_baby3_601c "601C.3. Since the delivery, did your 3rd baby receive their length measured (using a measuring tape)?"
+label variable m4_baby3_601c "601C.3. Did your 3rd baby receive their length measured (using a measuring tape)?"
 
-label variable m4_baby1_601d "601D.1. Since the delivery, did your 1st baby receive their eyes examined?"
+label variable m4_baby1_601d "601D.1. Did your 1st baby receive their eyes examined?"
 
-label variable m4_baby2_601d "601D.2. Since the delivery, did your 2nd baby receive their eyes examined?"
+label variable m4_baby2_601d "601D.2. Did your 2nd baby receive their eyes examined?"
 
-label variable m4_baby3_601d "601D.3. Since the delivery, did your 3rd baby receive their eyes examined?"
+label variable m4_baby3_601d "601D.3. Did your 3rd baby receive their eyes examined?"
 
-label variable m4_baby1_601e "601E.1. Since the delivery, did your 1st baby receive their hearing checked?"
+label variable m4_baby1_601e "601E.1. Did your 1st baby receive their hearing checked?"
 
-label variable m4_baby2_601e "601E.2. Since the delivery, did your 2nd baby receive their hearing checked?"
+label variable m4_baby2_601e "601E.2. Did your 2nd baby receive their hearing checked?"
 
-label variable m4_baby3_601e "601E.3. Since the delivery, did your 3rd baby receive their hearing checked?"
+label variable m4_baby3_601e "601E.3. Did your 3rd baby receive their hearing checked?"
 
-label variable m4_baby1_601f "601F.1. Since the delivery, did your 1st baby receive his/her chest listened to with a stethoscope?"
+label variable m4_baby1_601f "601F.1. Did your 1st baby receive his/her chest listened to with a stethoscope?"
 
-label variable m4_baby2_601f "601F.2. Since the delivery, did your 2nd baby receive his/her chest listened to with a stethoscope?"
+label variable m4_baby2_601f "601F.2. Did your 2nd baby receive his/her chest listened to with a stethoscope?"
 
-label variable m4_baby3_601f "601F.3. Since the delivery, did your 3rd baby receive his/her chest listened to with a stethoscope?"
+label variable m4_baby3_601f "601F.3. Did your 3rd baby receive his/her chest listened to with a stethoscope?"
 
-label variable m4_baby1_601g "601G.1. Since the delivery, did your 1st baby receive a blood test using a finger prick (that is, taking a drop of blood from their finger)?"
+label variable m4_baby1_601g "601G.1. Did your 1st baby receive a blood test using a finger prick (that is, taking a drop of blood from their finger)?"
 
-label variable m4_baby2_601g "601G.2. Since the delivery, did your 2nd baby receive a blood test using a finger prick (that is, taking a drop of blood from their finger)?"
+label variable m4_baby2_601g "601G.2. Did your 2nd baby receive a blood test using a finger prick (that is, taking a drop of blood from their finger)?"
 
-label variable m4_baby3_601g "601G.3. Since the delivery, did your 3rd baby receive a blood test using a finger prick (that is, taking a drop of blood from their finger)?"
+label variable m4_baby3_601g "601G.3. Did your 3rd baby receive a blood test using a finger prick (that is, taking a drop of blood from their finger)?"
 
-label variable m4_baby1_601h "601H.1. Since the delivery, did your 1st baby receive a malaria test (only asked in endemic areas)?"
+label variable m4_baby1_601h "601H.1. Did your 1st baby receive a malaria test (only asked in endemic areas)?"
 
-label variable m4_baby2_601h "601H.2. Since the delivery, did your 2nd baby receive a malaria test (only asked in endemic areas)?"
+label variable m4_baby2_601h "601H.2. Did your 2nd baby receive a malaria test (only asked in endemic areas)?"
 
-label variable m4_baby3_601h "601H.3. Since the delivery, did your 3rd baby receive a malaria test (only asked in endemic areas)?"
+label variable m4_baby3_601h "601H.3. Did your 3rd baby receive a malaria test (only asked in endemic areas)?"
 
-label variable m4_baby1_601i "601I.1. Since the delivery, did your 1st baby receive any other test?"
+label variable m4_baby1_601i "601I.1. Did your 1st baby receive any other test?"
 
 label variable m4_baby1_601i_other "601I.1-other. Since the delivery, please specify any other test your 1st baby receive?"
 
-label variable m4_baby2_601i "601I.2. Since the delivery, did your 2nd baby receive any other test?"
+label variable m4_baby2_601i "601I.2. Did your 2nd baby receive any other test?"
 
 label variable m4_baby2_601i_other "601I.2-other. Since the delivery, please specify any other test your 2nd baby receive?"
 
 
-label variable m4_baby3_601i "601I.3. Since the delivery, did your 3rd baby receive any other test?"
+label variable m4_baby3_601i "601I.3. Did your 3rd baby receive any other test?"
 
 label variable m4_baby3_601i_other "601I.3-other. Since the delivery, please specify any other test your 3rd baby receive?"
 
@@ -5646,19 +6409,19 @@ label variable m4_baby3_618b "618B.3. What was the result of your 3rd baby's HIV
 
 label variable m4_baby3_618c "618C.3 Was your 3rd baby given medication to prevent HIV/AIDS?"
 
-label variable m4_602a "602A. Since the delivery, did you discuss with a health care provider about how often the baby eats ?"
+label variable m4_602a "602A. Did you discuss about how often the baby eats?"
 
-label variable m4_602b "602B. Since the delivery, did you discuss with a health care provider about what the baby should eat (only breast milk or other foods) ? "
+label variable m4_602b "602B. Did you discuss about what the baby should eat (only breast milk or other foods)? "
 
-label variable m4_602c "602C. Since the delivery, did you discuss with a health care provider about vaccinations for the baby? "
+label variable m4_602c "602C. Did you discuss about vaccinations for the baby? "
 
-label variable m4_602d "602D. Since the delivery, did you discuss with a health careprovider about the position the baby should sleep in (on their back or their stomach)?"
+label variable m4_602d "602D. Did you discuss with a health careprovider about the position the baby should sleep in (on their back or their stomach)?"
 
-label variable m4_602e "602E. Since the delivery, did you discuss with a health care provider about danger signs or symptoms you should watch out for in the baby that would mean you should go to a health facility? "
+label variable m4_602e "602E. Did you discuss about danger signs or symptoms you should watch out for in the baby that would mean you should go to a health facility? "
 
-label variable m4_602f "602F. Since the delivery, did you discuss with a health care provider about how you should play and interact with the baby? "
+label variable m4_602f "602F. Did you discuss about how you should play and interact with the baby? "
 
-label variable m4_602g "602G. Since the delivery, did you discuss with a health care provider about that you should take the baby to the hospital or to see a specialist like a pediatrician or a neonatologist?"
+label variable m4_602g "602G. Did you discuss about that you should take the baby to the hospital or to see a specialist like a pediatrician or a neonatologist?"
 
 label variable m4_baby1_603a "603.1. What did the health care provider tell you to do regarding signs of emergency for your 1st baby? Please tell me all that apply"
 
@@ -5714,26 +6477,26 @@ label variable m4_baby3_603_96 "603.3. What did the health care provider tell yo
 
 label variable m4_baby3_603_other "603.3-other. Specify other thing your health care provider did"
 
-label variable m4_701a "701A. Since the delivery, did you receive your blood pressure measured (with a cuff around your arm)?"
-label variable m4_701b "701B. Since the delivery, did you receive your temperature taken (with a thermometer)?"
-label variable m4_701c "701C. Since the delivery, did you receive a vaginal exam?"
-label variable m4_701d "701D. Since the delivery, did you receive a blood draw (that is, taking blood from your arm with a syringe)?"
-label variable m4_701e "701E. Since the delivery, did you receive a blood test using a finger prick (that is, taking a drop of blood from your finger?"
-label variable m4_701f "701F. Since the delivery, did you receive an HIV test?"
-label variable m4_701g "701G. Since the delivery, did you receive a urine test (that is, where you peed in a container)?"
-label variable m4_701h "701H. Since the delivery, did you receive any other test or examination?"
+label variable m4_701a "701A. Did you receive your blood pressure measured (with a cuff around your arm)?"
+label variable m4_701b "701B. Did you receive your temperature taken (with a thermometer)?"
+label variable m4_701c "701C. Did you receive a vaginal exam?"
+label variable m4_701d "701D. Did you receive a blood draw (that is, taking blood from your arm with a syringe)?"
+label variable m4_701e "701E. Did you receive a blood test using a finger prick (that is, taking a drop of blood from your finger?"
+label variable m4_701f "701F. Did you receive an HIV test?"
+label variable m4_701g "701G. Did you receive a urine test (that is, where you peed in a container)?"
+label variable m4_701h "701H. Did you receive any other test or examination?"
 label variable m4_701h_other "701H-other. Specify any other test you received since the delivery."
 
-label variable m4_702 "702. Since the delivery, did a health care provider examine your c-section scar?"
+label variable m4_702 "702. Did a health care provider examine your c-section scar?"
 
-label variable m4_703a "703A. Since the delivery, did you discuss how to take care of your breasts (for example, good positioning for breastfeeding, hand expression of breast milk, or the use of warm or cold compresses) with a health care provider?"
-label variable m4_703b "703B. Since the delivery, did you receive danger signs or symptoms you should watch out for in yourself that would mean you should go to a health facility?"
-label variable m4_703c "703C. Since the delivery, did you receive your level of anxiety or depression?"
-label variable m4_703d "703D. Since the delivery, did you receive your family planning options after the delivery?"
-label variable m4_703e "703E. Since the delivery, did you receive  resuming sexual activity after birth?"
-label variable m4_703f "703F. Since the delivery, did you receive  the importance of exercise or physical activity after giving birth?"
-label variable m4_703g "703G. Since the delivery, did you receive the importance of sleeping under a bed net [Asked only in malaria endemic areas]?"
-label variable m4_704a "704A. Since the delivery, did you have a session of psychological counseling or therapy with any type of professional? This could include seeing a mental health professional (like a psychologist, social worker, nurse, religious or spiritual advisor, or healer) for problems with your emotions or nerves."
+label variable m4_703a "703A. Did you discuss how to take care of your breasts (for example, good positioning for breastfeeding, hand expression of breast milk, or the use of warm or cold compresses) with a health care provider?"
+label variable m4_703b "703B. Did you receive danger signs or symptoms you should watch out for in yourself that would mean you should go to a health facility?"
+label variable m4_703c "703C. Did you receive your level of anxiety or depression?"
+label variable m4_703d "703D. Did you receive your family planning options after the delivery?"
+label variable m4_703e "703E. Did you receive  resuming sexual activity after birth?"
+label variable m4_703f "703F. Did you receive  the importance of exercise or physical activity after giving birth?"
+label variable m4_703g "703G. Did you receive the importance of sleeping under a bed net [Asked only in malaria endemic areas]?"
+label variable m4_704a "704A. Did you have a session of psychological counseling or therapy with any type of professional? This could include seeing a mental health professional (like a psychologist, social worker, nurse, religious or spiritual advisor, or healer) for problems with your emotions or nerves."
 
 label variable m4_704b "704B. How many of these sessions did you have since the delivery?"
 label variable m4_704c "704C. How many of these sessions did you have since the delivery?"
@@ -5778,13 +6541,13 @@ label variable m4_baby1_802e "802E_1. Did your 1st baby get Antiseptic ointment?
 label variable m4_baby2_802e "802E_2. Did your 2nd baby get Antiseptic ointment?" 
 label variable m4_baby3_802e "802E_3. Did your 3rd baby get Antiseptic ointment?"
 
-label variable m4_baby1_802f "802F_1. Did your 1st baby get antibiotics ?"
-label variable m4_baby2_802f "802F_2. Did your 2nd baby get antibiotics ?" 
-label variable m4_baby3_802f "802F_3. Did your 3rd baby get antibiotics ?"
+label variable m4_baby1_802f "802F_1. Did your 1st baby get antibiotics?"
+label variable m4_baby2_802f "802F_2. Did your 2nd baby get antibiotics?" 
+label variable m4_baby3_802f "802F_3. Did your 3rd baby get antibiotics?"
 
-label variable m4_baby1_802g "802G_1. Did your 1st baby get medicine to prevent pneumonia ?"
-label variable m4_baby2_802g "802G_2. Did your 2nd baby get medicine to prevent pneumonia ?" 
-label variable m4_baby3_802g "802G_3. Did your 3rd baby get medicine to prevent pneumonia ?"
+label variable m4_baby1_802g "802G_1. Did your 1st baby get medicine to prevent pneumonia?"
+label variable m4_baby2_802g "802G_2. Did your 2nd baby get medicine to prevent pneumonia?" 
+label variable m4_baby3_802g "802G_3. Did your 3rd baby get medicine to prevent pneumonia?"
 
 label variable m4_baby1_802h "802H_1. Did your 1st baby get Medicine for malaria [endemic areas]?"
 label variable m4_baby2_802h "802H_2. Did your 2nd baby get Medicine for malaria [endemic areas]?" 
@@ -5794,44 +6557,44 @@ label variable m4_baby1_802i "802I_1. Did your 1st baby get Medicine for HIV [HI
 label variable m4_baby2_802i "802I_2. Did your 2nd baby get Medicine for HIV [HIV+ mothers only]?" 
 label variable m4_baby3_802i "802I_3. Did your 3rd baby get Medicine for HIV [HIV+ mothers only]?"
 
-label variable m4_802j_1 "802J_1. Did your 1st baby get any other medicine or supplement?"
+label variable m4_baby1_802j "802J_1. Did your 1st baby get any other medicine or supplement?"
 label variable m4_baby1_802j_other "802J_1_other. Specify any other any other medicine or supplement for your 1st baby." 
-label variable m4_802j_2 "802J_2. Did your 2nd baby get any other medicine or supplement?"
+label variable m4_baby2_802j "802J_2. Did your 2nd baby get any other medicine or supplement?"
 label variable m4_baby2_802j_other "802J_2_other. Specify any other any other medicine or supplement for your 2nd baby."
-label variable m4_802j_3 "802J_3. Did your 3rd baby get any other medicine or supplement?"
+label variable m4_baby3_802j "802J_3. Did your 3rd baby get any other medicine or supplement?"
 label variable m4_baby3_802j_other "802J_3_other. Specify any other any other medicine or supplement for your 3rd baby."
 
-label variable m4_803a_1 "803A_1. Since the delivery, did your 1st baby get a vaccine for BCG against tuberculosis (that is an injection in the arm that can sometimes cause a scar). Do not include any BCG vaccine you already told us about"
-label variable m4_803a_2 "803A_2. Since the delivery, did your 2nd baby get a vaccine for BCG against tuberculosis (that is an injection in the arm that can sometimes cause a scar). Do not include any BCG vaccine you already told us about"
-label variable m4_803a_3 "803A_3. Since the delivery, did your 3rd baby get a vaccine for BCG against tuberculosis (that is an injection in the arm that can sometimes cause a scar). Do not include any BCG vaccine you already told us about"
+label variable m4_baby1_803a "803A_1. Did your 1st baby get a vaccine for BCG against tuberculosis (that is an injection in the arm that can sometimes cause a scar). Do not include any BCG vaccine you already told us about"
+label variable m4_baby2_803a "803A_2. Did your 2nd baby get a vaccine for BCG against tuberculosis (that is an injection in the arm that can sometimes cause a scar). Do not include any BCG vaccine you already told us about"
+label variable m4_baby3_803a "803A_3. Did your 3rd baby get a vaccine for BCG against tuberculosis (that is an injection in the arm that can sometimes cause a scar). Do not include any BCG vaccine you already told us about"
 
-label variable m4_803b_1 "803B_1. Since the delivery, did your 1st baby get a vaccine against polio that is taken orally, usually two drops in the mouth, to prevent polio?"
-label variable m4_803b_2 "803B_2. Since the delivery, did your 2nd baby get a vaccine against polio that is taken orally, usually two drops in the mouth, to prevent polio?"
-label variable m4_803b_3 "803B_3. Since the delivery, did your 3rd baby get a vaccine against polio that is taken orally, usually two drops in the mouth, to prevent polio?"
+label variable m4_baby1_803b "803B_1. Did your 1st baby get a vaccine against polio that is taken orally, usually two drops in the mouth, to prevent polio?"
+label variable m4_baby2_803b "803B_2. Did your 2nd baby get a vaccine against polio that is taken orally, usually two drops in the mouth, to prevent polio?"
+label variable m4_baby3_803b "803B_3. Did your 3rd baby get a vaccine against polio that is taken orally, usually two drops in the mouth, to prevent polio?"
 
-label variable m4_803c_1 "803C_1. Since the delivery, did your 1st baby get a pentavalent vaccination, that is, an injection in the thigh that is sometimes given at the same time as the polio drops?"
-label variable m4_803c_2 "803C_2. Since the delivery, did your 2nd baby get a pentavalent vaccination, that is, an injection in the thigh that is sometimes given at the same time as the polio drops?"
-label variable m4_803c_3 "803C_3. Since the delivery, did your 3rd baby get a pentavalent vaccination, that is, an injection in the thigh that is sometimes given at the same time as the polio drops?"
+label variable m4_baby1_803c "803C_1. Did your 1st baby get a pentavalent vaccination, that is, an injection in the thigh that is sometimes given at the same time as the polio drops?"
+label variable m4_baby2_803c "803C_2. Did your 2nd baby get a pentavalent vaccination, that is, an injection in the thigh that is sometimes given at the same time as the polio drops?"
+label variable m4_baby3_803c "803C_3. Did your 3rd baby get a pentavalent vaccination, that is, an injection in the thigh that is sometimes given at the same time as the polio drops?"
 
-label variable m4_803d_1 "803D_1. Since the delivery, did your 1st baby get a pneumococcal vaccination, that is, an injection in the thigh to prevent pneumonia?"
-label variable m4_803d_2 "803D_2. Since the delivery, did your 2nd baby get a pneumococcal vaccination, that is, an injection in the thigh to prevent pneumonia?"
-label variable m4_803d_3 "803D_3. Since the delivery, did your 3rd baby get a pneumococcal vaccination, that is, an injection in the thigh to prevent pneumonia?"
+label variable m4_baby1_803d "803D_1. Did your 1st baby get a pneumococcal vaccination, that is, an injection in the thigh to prevent pneumonia?"
+label variable m4_baby2_803d "803D_2. Did your 2nd baby get a pneumococcal vaccination, that is, an injection in the thigh to prevent pneumonia?"
+label variable m4_baby3_803d "803D_3. Did your 3rd baby get a pneumococcal vaccination, that is, an injection in the thigh to prevent pneumonia?"
 
-label variable m4_803e_1 "803E_1. Since the delivery, did your 1st baby get a rotavirus vaccination, that is, liquid in the mouth to prevent diarrhea?"
-label variable m4_803e_2 "803E_2. Since the delivery, did your 2nd baby get a rotavirus vaccination, that is, liquid in the mouth to prevent diarrhea?"
-label variable m4_803e_3 "803E_3. Since the delivery, did your 3rd baby get a rotavirus vaccination, that is, liquid in the mouth to prevent diarrhea?"
+label variable m4_baby1_803e "803E_1. Did your 1st baby get a rotavirus vaccination, that is, liquid in the mouth to prevent diarrhea?"
+label variable m4_baby2_803e "803E_2. Did your 2nd baby get a rotavirus vaccination, that is, liquid in the mouth to prevent diarrhea?"
+label variable m4_baby3_803e "803E_3. Did your 3rd baby get a rotavirus vaccination, that is, liquid in the mouth to prevent diarrhea?"
 
-label variable m4_803f_1 "803F_1. Since the delivery, did your 1st baby get any other vaccines or immunizations?"
-label variable m4_803f_2 "803F_2. Since the delivery, did your 2nd baby get any other vaccines or immunizations?"
-label variable m4_803f_3 "803F_3. Since the delivery, did your 3rd baby get any other vaccines or immunizations?"
+label variable m4_baby1_803f "803F_1. Did your 1st baby get any other vaccines or immunizations?"
+label variable m4_baby2_803f "803F_2. Did your 2nd baby get any other vaccines or immunizations?"
+label variable m4_baby3_803f "803F_3. Did your 3rd baby get any other vaccines or immunizations?"
 
-label variable m4_803g_1 "803G_1. Specify any other vaccine or  immunization your 1st baby got."
-label variable m4_803g_2 "803G_2. Specify any other vaccine or  immunization your 1st baby got."
-label variable m4_803g_3 "803G_3. Specify any other vaccine or  immunization your 1st baby got."
+label variable m4_baby1_803g "803G_1. Specify any other vaccine or  immunization your 1st baby got."
+label variable m4_baby2_803g "803G_2. Specify any other vaccine or  immunization your 1st baby got."
+label variable m4_baby3_803g "803G_3. Specify any other vaccine or  immunization your 1st baby got."
 
-label variable m4_804_1 "804_1. Where did your 1st get these vaccines?"
-label variable m4_804_2 "804_2. Where did your 2nd get these vaccines?"
-label variable m4_804_3 "804_3. Where did your 3rd get these vaccines?"
+label variable m4_baby1_804 "804_1. Where did your 1st get these vaccines?"
+label variable m4_baby2_804 "804_2. Where did your 2nd get these vaccines?"
+label variable m4_baby3_804 "804_3. Where did your 3rd get these vaccines?"
 
 label variable m4_805 "805. In total, how much did you pay for these new medications, supplements and vaccines for yourself or the baby(ies)?"
  
@@ -5856,12 +6619,12 @@ label variable m4_903 "903. So how much in total would you say you spent? ____ i
 
 label variable m4_904 "904. So how much in total would you say you spent?"
 
-label variable m4_905_1 "905. Which of the following financial sources did your household use to pay for this?"
-label variable m4_905_2 "905. Which of the following financial sources did your household use to pay for this?"
-label variable m4_905_3 "905. Which of the following financial sources did your household use to pay for this?"
-label variable m4_905_4 "905. Which of the following financial sources did your household use to pay for this?"
-label variable m4_905_5 "905. Which of the following financial sources did your household use to pay for this?"
-label variable m4_905_6 "905. Which of the following financial sources did your household use to pay for this?"
+label variable m4_905a "905. Which of the following financial sources did your household use to pay for this?"
+label variable m4_905b "905. Which of the following financial sources did your household use to pay for this?"
+label variable m4_905c "905. Which of the following financial sources did your household use to pay for this?"
+label variable m4_905d "905. Which of the following financial sources did your household use to pay for this?"
+label variable m4_905e "905. Which of the following financial sources did your household use to pay for this?"
+label variable m4_905f "905. Which of the following financial sources did your household use to pay for this?"
 label variable m4_905_96 "905. Which of the following financial sources did your household use to pay for this?"
 
 label variable m4_905_other "905-other. Specify other sources of financial source."
@@ -5871,6 +6634,468 @@ label variable m4_ot1 "OT1. What is the Outcome of the phone call? Interviewer s
 label variable m4_ot1_oth "Ot1_Oth. Specify."
 label variable m4_complete "Complete?"
 
+
+		** MODULE 5:
+label variable m5_start "IC: May I proceed with the interview? "
+label variable m5_consent "B1: : Permission granted to conduct interview"
+label variable m5_date "102. Date of interview (D-M-Y) "
+label variable m5_starttime "103. Time of interview "
+label variable m5_maternal_death_reported "113. Maternal death reported"
+label variable m5_date_of_maternal_death "114. Date of maternal death "
+label variable m5_maternal_death_learn "115. How did you learn about the maternal death? "
+label variable m5_maternal_death_learn_other "115_Oth. Specify how you heard maternal death "
+label variable m5_baby1_alive "201a. Could you please confirm if your 1st baby is still alive, or died something else happen?"
+label variable m5_baby2_alive "201b. Could you please confirm if your 2nd baby is still alive, or died something else happen?"
+label variable m5_baby3_alive "201c. Could you please confirm if your 3rd baby is still alive, or died something else happen?"
+label variable m5_baby1_health "202a. In general, how would you rate the 1st baby's overall health?"
+label variable m5_baby2_health "202b. In general, how would you rate 2nd baby's overall health?"
+label variable m5_baby3_health "202c. In general, how would you rate 3rd baby's overall health?"
+label variable m5_baby1_feed_a "203a. PBreast milk"
+label variable m5_baby1_feed_b "203a. Formula"
+label variable m5_baby1_feed_c "203a. Water"
+label variable m5_baby1_feed_d "203a. Juice"
+label variable m5_baby1_feed_e "203a. Broth"
+label variable m5_baby1_feed_f "203a. Baby food"
+label variable m5_baby1_feed_h "203a. Milk/soup / Porridge"
+label variable m5_baby1_feed_99 "203a. NR/RF"
+label variable m5_baby1_feed_998 "203a. Unknown"
+label variable m5_baby1_feed_999 "203a. Refuse to answer"
+label variable m5_baby1_feed_888 "203a. No Information"
+
+label variable m5_baby2_feed_a "203b. Breast milk"
+label variable m5_baby2_feed_b "203b. Formula"
+label variable m5_baby2_feed_c "203b. Water"
+label variable m5_baby2_feed_d "203b. Juice"
+label variable m5_baby2_feed_e "203b. Broth"
+label variable m5_baby2_feed_f "203b. Baby food"
+label variable m5_baby2_feed_h "203b. Milk/soup/Porridge"
+label variable m5_baby2_feed_99 "203b. NR/RF"
+label variable m5_baby2_feed_998 "203b. Unknown"
+label variable m5_baby2_feed_999 "203b. Refuse to answer"
+label variable m5_baby2_feed_888 "203b. No Information"
+
+label variable m5_baby3_feed_a "203c. Breast milk"
+label variable m5_baby3_feed_b "203c. Formula"
+label variable m5_baby3_feed_c "203c. Water"
+label variable m5_baby3_feed_d "203c. Juice"
+label variable m5_baby3_feed_e "203c. Broth"
+label variable m5_baby3_feed_f "203c. Baby food"
+label variable m5_baby3_feed_h "203c. Milk/soup/Porridge"
+label variable m5_baby3_feed_99 "203c. NR/RF"
+label variable m5_baby3_feed_998 "203c. Unknown"
+label variable m5_baby3_feed_999 "203c. Refuse to answer"
+label variable m5_baby3_feed_888 "203c. No Information"
+
+label variable m5_feed_freq_et "Eth-1-2. How frequently in average do you feed your baby/babies per day?"
+label variable m5_feed_freq_et_unk "Eth-1-2_unk. If the number of feeding is not known enter (98)"
+label variable m5_breastfeeding "204. As of today, how confident do you feel about breastfeeding your baby/babies?"
+label variable m5_baby1_sleep "205a.1. Regarding sleep, which response best describes your 1st baby today?"
+label variable m5_baby2_sleep "205a.2. Regarding sleep, which response best describes your 2rd baby  today?"
+label variable m5_baby3_sleep "205a.3. Regarding sleep, which response best describes your 3rd baby today?"
+label variable m5_baby1_feed "205b.1. Regarding feeding, which response best describes your 1st baby today?"
+label variable m5_baby2_feed "205b.2. Regarding feeding, which response best describes your 2nd baby today?"
+label variable m5_baby3_feed "205b.3. Regarding feeding, which response best describes your 3rd baby today?"
+label variable m5_baby1_breath "205c.1. Regarding breathing, which response best describes your 1st baby today? "
+label variable m5_baby2_breath "205c.2. Regarding breathing, which response best describes your 2nd baby today?"
+label variable m5_baby3_breath "205c.3. Regarding breathing, which response best describes your 3rd baby today?"
+label variable m5_baby1_stool "205d.1. Regarding stooling/poo, which response best describes your 1st baby today?"
+label variable m5_baby2_stool "205d.2. Regarding stooling/poo, which response best describes your 2nd baby  today?"
+label variable m5_baby3_stool "205d.3. Regarding stooling/poo, which response best describes your 3rd baby today?"
+label variable m5_baby1_mood "205e.1. Regarding their mood, which response best describes your 1st baby today?"
+label variable m5_baby2_mood "205e.2.Regarding their mood, which response best describes your 2nd baby  today?"
+label variable m5_baby3_mood "205e.3. Regarding their mood, which response best describes your 3rd baby today?"
+label variable m5_baby1_skin "205f.1. Regarding their skin, which response best describes your 1st baby today?"
+label variable m5_baby2_skin "205f.2.Regarding their skin, which response best describes your 2nd baby  today?"
+label variable m5_baby3_skin "205f.3. Regarding their skin, which response best describes your 3rd baby today?"
+label variable m5_baby1_interactivity "205g.1. Regarding interactivity, which response best describes your 1st baby today?"
+label variable m5_baby2_interactivity "205g.2. Regarding interactivity, which response best describes your 2nd baby  today?"
+label variable m5_baby3_interactivity "205g.3. Regarding interactivity, which response best describes your 3rd baby today?"
+
+label variable m5_baby1_issues_a "206a.1. Did your 1st baby experience Diarrhea with blood in the stools since you last spoke to us, or not?"
+label variable m5_baby2_issues_a "206a.2. Did your 2nd baby  experience Diarrhea with blood in the stools since you last spoke to us, or not?"
+label variable m5_baby3_issues_a "206a.3. Did your 3rd baby experience Diarrhea with blood in the stools since you last spoke to us, or not?"
+label variable m5_baby1_issues_b "206b.1. Did your 1st baby experience A fever (a temperature > 37.5 C) since you last spoke to us, or not?"
+label variable m5_baby2_issues_b "206b.2. Did your 2nd baby  experience A fever (a temperature > 37.5 C) since you last spoke to us, or not?"
+label variable m5_baby3_issues_b "206b.3. Did your 3rd baby experience A fever (a temperature > 37.5 C) since you last spoke to us, or not?"
+label variable m5_baby1_issues_c "206c.1. Did your 1st baby experience A low temperature (< 35.5 C) since you last spoke to us, or not?"
+label variable m5_baby2_issues_c "206c.2. Did your 2nd baby  experience A low temperature (< 35.5 C) since you last spoke to us, or not?"
+label variable m5_baby3_issues_c "206c.3. Did your 3rd baby experience a low temperature (a temperature < 35.5 C) since you last spoke to us, or not?"
+label variable m5_baby1_issues_d "206d.1. Did your 1st baby experience an illness with a cough since you last spoke to us, or not?"
+label variable m5_baby2_issues_d "206d.2. Did your 2nd baby  experience an illness with a cough since you last spoke to us, or not?"
+label variable m5_baby3_issues_d "206d.3. Did your 3rd baby experience an illness with a cough since you last spoke to us, or not?"
+label variable m5_baby1_issues_e "206e.1. Did your 1st baby experience Trouble breathing or very fast breathing with short rapid breaths since you last spoke to us, or not?"
+label variable m5_baby2_issues_e "206e.2. Did your 2nd baby  experience Trouble breathing or very fast breathing with short rapid breaths since you last spoke to us, or not?"
+label variable m5_baby3_issues_e "206e.3. Did your 3rd baby experience Trouble breathing or very fast breathing with short rapid breaths since you last spoke to us, or not?"
+label variable m5_baby1_issues_f "206f.1. Did your 1st baby experience a problem in the chest since you last spoke to us, or not?"
+label variable m5_baby2_issues_f "206f.2. Did your 2nd baby  experience a problem in the chest since you last spoke to us, or not?"
+label variable m5_baby3_issues_f "206f.3. Did your 3rd baby experience a problem in the chest since you last spoke to us, or not?"
+label variable m5_baby1_issues_g "206g.1. Did your 1st baby experience trouble feeding since you last spoke to us, or not?"
+label variable m5_baby2_issues_g "206g.2. Did your 2nd baby  experience trouble feeding since you last spoke to us, or not?"
+label variable m5_baby3_issues_g "206g.3. Did your 3rd baby experience trouble feeding since you last spoke to us, or not?"
+label variable m5_baby1_issues_h "206h.1. Did your 1st baby experience convulsions since you last spoke to us, or not?"
+label variable m5_baby2_issues_h "206h.2. Did your 2nd baby  experience convulsions since you last spoke to us, or not?"
+label variable m5_baby3_issues_h "206h.3. Did your 3rd baby experience convulsions since you last spoke to us, or not?"
+label variable m5_baby1_issues_i "206i.1. Did your 1st baby experience Jaundice (that is, yellow colour of the skin) since you last spoke to us, or not?"
+label variable m5_baby2_issues_i "206i.2. Did your 2nd baby  experience Jaundice (that is, yellow colour of the skin) since you last spoke to us, or not?"
+label variable m5_baby3_issues_i "206i.3. Did your 3rd baby experience Jaundice (that is, yellow colour of the skin) since you last spoke to us, or not?"
+label variable m5_baby1_issues_j "206j.1. Did your 1st baby experience yellow palms or soles since you last spoke to us, or not?"
+label variable m5_baby2_issues_j "206j.2. Did your 2nd baby  experience yellow palms or soles since you last spoke to us, or not?"
+label variable m5_baby3_issues_j "206j.3. Did your 3rd baby experience yellow palms or soles since you last spoke to us, or not?"
+label variable m5_baby1_issues_k "206k.1. Did your 1st baby experience Lethargic/ unconscious since you last spoke to us, or not?"
+label variable m5_baby2_issues_k "206.k.2. Did your 2nd baby experience Lethargic/ unconscious since you last spoke to us, or not?"
+label variable m5_baby3_issues_k "206.k.3. Did your 3rd baby experience Lethargic/ unconscious since you last spoke to us, or not?"
+label variable m5_baby1_issues_l "206.I.1. Did your 1st baby experience Bulged fontanels since you last spoke to us, or not?"
+label variable m5_baby2_issues_l "206.I.2. Did your 2nd baby experience Bulged fontanels since you last spoke to us, or not?"
+label variable m5_baby3_issues_l "206.I.3. Did your 3rd baby experience Bulged fontanels since you last spoke to us, or not?"
+label variable m5_baby1_issues_oth "207a.1. Did your 1st baby experience any other health problems since you last spoke to us?"
+label variable m5_baby1_issues_oth_text "Oth-207a.1. Specify any other problem on your 1st baby"
+label variable m5_baby2_issues_oth "207a.2 Did your 2nd baby  experience any other health problems since you last spoke to us?"
+label variable m5_baby2_issues_oth_text "Oth-207a.2. Specify any other problem on your 2nd baby"
+label variable m5_baby3_issues_oth "207a.3 Did your 3rd baby  experience any other health problems since you last spoke to us?"
+label variable m5_baby3_issues_oth_text "Oth-207a.3. Specify any other problem on your 3rd baby"
+label variable m5_baby1_death "208a.1.  Do you know when your 1st baby died?"
+label variable m5_baby1_death_date "Oth-208a.1. On what date did your 1st baby died? (D-M-Y)"
+label variable m5_baby2_death "208a.2. Do you know when your 1st baby died?"
+label variable m5_baby2_death_date "Oth-208a.2. On what date did your 2nd baby died?"
+label variable m5_baby3_death "208a.3. Do you know when your 3rd baby died?"
+label variable m5_baby3_death_date "Oth-208a.3. On what date did your 3rd baby died? (D-M-Y)"
+label variable m5_baby1_death_age "209a. Exactly how many  days old was your 1st baby when he/she died?"
+label variable m5_baby2_death_age "209b. Exactly how many  days old was your 2nd baby when he/she died?"
+label variable m5_baby3_death_age "209c. Exactly how many days old was your 3rd baby when he/she died?"
+label variable m5_baby1_death_cause "210a. What were you told was the cause of death of your 1st baby?"
+label variable m5_baby1_deathcause_other "Oth-210a. What other causes you told was the cause of death of your 1st baby death?"
+label variable m5_baby2_death_cause "210b. What were you told was the cause of death of your 2nd baby"
+label variable m5_baby2_deathcause_other "Oth-210b. What other causes you told was the cause of death of your 2nd baby death"
+label variable m5_baby3_death_cause "210c. What were you told was the cause of death of your 3rd baby?"
+label variable m5_baby3_deathcause_other "Oth-210c. What other causes you told was the cause of death of your 3rd baby death?"
+label variable m5_baby1_advice "211a. Before your 1st baby died, did you seek advice or treatment for the illness from any source?"
+label variable m5_baby2_advice "211b. Before your 2nd baby died, did you seek advice or treatment for the illness from any source? "
+label variable m5_baby3_advice "211c. Before your 3rd baby died, did you seek advice or treatment for the illness from any source?"
+label variable m5_baby1_deathloc "212a. Where did your 1st baby die?"
+label variable m5_baby2_deathloc "212b. Where did your 2nd baby die?"
+label variable m5_baby3_deathloc "212c. Where did your 3rd baby die?"
+label variable m5_health "301. In general, how would you rate your overall health? "
+label variable m5_health_a "302a. I am going to read three statements about your mobility, by which I mean your ability to walk around"
+label variable m5_health_b "302b. I am now going to read three statements regarding your ability to self-care, by which I mean whether you can wash and dress yourself without assistance"
+label variable m5_health_c "302c. I am going to read three statements regarding your ability to perform your usual daily activities, by which I mean your ability to work, take care of your family or perform leisure activities"
+label variable m5_health_d "302d. I am going to read three statements regarding your experience with physical pain or discomfort"
+label variable m5_health_e "302e. I am going to read three statements regarding your experience with anxiety or depression"
+label variable m5_depression_a "303a. How many days have you been bothered by little interest or pleasure in doing things?"
+label variable m5_depression_b "303b. How many days have you been bothered by feeling down, depressed, or hopeless?"
+label variable m5_depression_c "303c. How many days have you been bothered Trouble falling or staying asleep, or sleeping too much?"
+label variable m5_depression_d "303d. How many days have you been bothered Feeling tired or having little energy?"
+label variable m5_depression_e "303e. How many days have you been bothered Poor appetite or overeating?"
+label variable m5_depression_f "303f. How many days have you been bothered Feeling bad about yourself - or that you are a failure or have let yourself or your family down?"
+label variable m5_depression_g "303g. How many days have you been bothered Trouble concentrating on things, such as your work or home duties?"
+label variable m5_depression_h "303h. How many days have you been bothered Moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
+label variable m5_depression_i "303i, How many days have you been bothered Thoughts that you would be better off dead, or thoughts of hurting yourself in some way? "
+label variable m5_affecthealth_scale  "304. During the past seven days, how much did any health problems affect your productivity while you were working?"
+label variable m5_feeling_a "305a. Please tell me what best describes how have felt about your baby loving"
+label variable m5_feeling_b "305b. Please tell me what best describes how have felt about your baby resentful"
+label variable m5_feeling_c "305c. Please tell me what best describes how have felt about your baby neutral or felt nothing"
+label variable m5_feeling_d "305d. Please tell me what best describes how have felt about your baby Joyful"
+label variable m5_feeling_e "305e. Please tell me what best describes how have felt about your baby Dislike"
+label variable m5_feeling_f "305f. Please tell me what best describes how have felt about your baby Protective"
+label variable m5_feeling_g "305g. Please tell me what best describes how have felt about your baby Disappointed"
+label variable m5_feeling_h "305h. Please tell me what best describes how have felt about your baby aggressive?  "
+label variable m5_pain "306. In the past 30 days, how much has pain affected your satisfaction with your sex life?"
+label variable m5_leakage "307. Since you gave birth to your baby, have you experienced a constant leakage of urine or stool from your vagina during the day and night?"
+label variable m5_leakage_when "308. How many days after giving birth did these symptoms start?"
+label variable m5_leakage_affect "309. How much does this problem alter your lifestyle or daily activities?"
+label variable m5_leakage_tx "310. Have you sought treatment for this condition?"
+label variable m5_leakage_notx_reason_0 "311. Why have you not sought treatment? (choice=Do not know it can be fixed)"
+label variable m5_leakage_notx_reason_1 "311. Why have you not sought treatment? (choice=You tried but were sent away)"
+label variable m5_leakage_notx_reason_2 "311. Why have you not sought treatment? (choice=High cost)"
+label variable m5_leakage_notx_reason_3 "311. Why have you not sought treatment? (choice=Far distance)"
+label variable m5_leakage_notx_reason_4 "311. Why have you not sought treatment? (choice=Poor healthcare provider skills)"
+label variable m5_leakage_notx_reason_5 "311. Why have you not sought treatment? (choice=Staff dont show respect)"
+label variable m5_leakage_notx_reason_6 "311. Why have you not sought treatment? (choice=Medicines or equipment are not available)"
+label variable m5_leakage_notx_reason_7 "311. Why have you not sought treatment? (choice=COVID-19 fear)"
+label variable m5_leakage_notx_reason_8 "311. Why have you not sought treatment? (choice=Dont know where to go/too complicated)"
+label variable m5_leakage_notx_reason_9 "311. Why have you not sought treatment? (choice=Could not get permission)"
+label variable m5_leakage_notx_reason_10 "311. Why have you not sought treatment? (choice=Embarrassment)"
+label variable m5_leakage_notx_reason_11 "311. Why have you not sought treatment? (choice=Problem disappeared)"
+label variable m5_leakage_notx_reason_96 "311. Why have you not sought treatment? (choice=Other (specify))"
+label variable m5_leakage_notx_reason_99 "311. Why have you not sought treatment? (choice=NR/RF)"
+label variable m5_leakage_notx_reason_998 "311. Why have you not sought treatment? (choice=Unknown)"
+label variable m5_leakage_notx_reason_999 "311. Why have you not sought treatment? (choice=Refuse to answer)"
+label variable m5_leakage_notx_reason_888 "311. Why have you not sought treatment? (choice=No Information)"
+label variable m5_leakage_notx_reason_oth "Oth-311. Other reason, specify"
+label variable m5_leakage_txeffect "312.  Did the treatment stop the problem?"
+label variable m5_401 "401. Now I would like to hear your thoughts about the healthcare system in your country as a whole.  How would you rate the overall quality of medical care in Ethiopia?"
+label variable m5_402 "402. Which of the following statements comes closest to expressing your overall view of the health care system in your country?"
+label variable m5_403 "403. How confident are you that if you became very sick tomorrow, you would receive good quality healthcare from the health system?"
+label variable m5_404 "404. How confident are you that you would be able to afford the healthcare you needed if you became very sick?"
+label variable m5_405a "405a. When you think about your health, how confident Very confident are you that, You are the person who is responsible  for managing your overall health?"
+label variable m5_405b "405b. When you think about your health, how confident  are you that, you can tell a healthcare provider concerns you have even when he or she does not ask?"
+label variable m5_406a "406a. Since your first antenatal care visit for this pregnancy, please tell me if the following events have happened to you personally?  You thought a medical mistake was made in your treatment or care"
+label variable m5_406b "406b. You were treated unfairly or discriminated against by a doctor, nurse, or another healthcare provider"
+label variable m5_501a "501a. id you or your baby/babies have any new health care consultations?"
+label variable m5_501b "501b. id you have any new health care consultations?"
+label variable m5_502 "502. Since we last spoke, how many new healthcare consultations did you have?"
+label variable m5_503_1 "503a. Where did this new 1st healthcare consultation for yourself or for your baby/babies take place?"
+label variable m5_503_2 "503b. Where did this new 2nd healthcare consultation for yourself or for your baby/babies take place?"
+label variable m5_503_3 "503c. Where did this new 3rd healthcare consultation for yourself or for your baby/babies take place?"
+label variable m5_504a_1 "504a. What is the name of the facility where the 1st new health care consultation took place?"
+label variable m5_504a_other_a_1 "Oth-504a.1. Specify Other facility in East Shewa or Adama"
+label variable m5_504a_other_b_1 "Oth-504a.1.1. Specify Other facility outside of East Shewa or Adama "
+label variable m5_504a_2 "504b. What is the name of the facility where the 2nd new health care consultation took place?"
+label variable m5_504a_3 "504c. What is the name of the facility where the 3rd new health care consultation took place?"
+label variable m5_505_1 "505. Was the 1st new consultation is for a routine or regular checkup after the delivery?"
+label variable m5_consultation1_a "506. A new health problem for the baby, including an emergency or an injury"
+label variable m5_consultation1_b "506. A new health problem for yourself, including an emergency or an injury"
+label variable m5_consultation1_c "506. An existing health problem for the baby"
+label variable m5_consultation1_d "506. An existing health problem for yourself"
+label variable m5_consultation1_e "506. A lab test, x-ray, or ultrasound for yourself"
+label variable m5_consultation1_f "506. A lab test, x-ray, or ultrasound for the baby"
+label variable m5_consultation1_g "506. Getting a vaccine for the baby"
+label variable m5_consultation1_h "506. Getting a vaccine for yourself"
+label variable m5_consultation1_i "506. To get medicine for yourself"
+label variable m5_consultation1_j "506. To get medicine for the baby"
+label variable m5_consultation1_oth "506. Other"
+label variable m5_consultation1_98 "506. DK"
+label variable m5_consultation1_99 "506. NR/RF"
+label variable m5_consultation1_998 "506. Unknown"
+label variable m5_consultation1_999 "506. Refuse to answer"
+label variable m5_consultation1_888 "506. No Information"
+label variable m5_consultation1_oth_text "506-Other.Specify other reasons why the 1st consultation was"
+label variable m5_505_2 "507. Was the 2nd new consultation is for a routine or regular checkup after the delivery?"
+label variable m5_consultation2_a "508. A new health problem for the baby, including an emergency or an injury"
+label variable m5_consultation2_b "508. A new health problem for yourself, including an emergency or an injury"
+label variable m5_consultation2_c "508. An existing health problem for the baby"
+label variable m5_consultation2_d "508. An existing health problem for yourself"
+label variable m5_consultation2_e "508.  A lab test, x-ray, or ultrasound for yourself"
+label variable m5_consultation2_f "508.  A lab test, x-ray, or ultrasound for the baby"
+label variable m5_consultation2_g "508.  Getting a vaccine for the baby"
+label variable m5_consultation2_h "508.  Getting a vaccine for yourself"
+label variable m5_consultation2_i "508.  To get medicine for yourself"
+label variable m5_consultation2_j "508.  To get medicine for the baby"
+label variable m5_consultation2_oth "508.  Other"
+label variable m5_consultation2_98 "508.  DK"
+label variable m5_consultation2_99 "508.  NR/RF"
+label variable m5_consultation2_998 "508.  Unknown"
+label variable m5_consultation2_999 "508.  Refuse to answer"
+label variable m5_consultation2_888 "508.  No Information"
+label variable m5_consultation2_oth_text "Oth-508. For any other service, specify it"
+label variable m5_505_3 "509.   Was the 3rd new consultation is for a routine or regular checkup after the delivery?"
+label variable m5_consultation3_a "510. A new health problem for the baby, including an emergency or an injury"
+label variable m5_consultation3_b "510. A new health problem for yourself, including an emergency or an injury"
+label variable m5_consultation3_c "510. An existing health problem for the baby"
+label variable m5_consultation3_d "510. An existing health problem for yourself"
+label variable m5_consultation3_e "510. A lab test, x-ray, or ultrasound for yourself"
+label variable m5_consultation3_f "510. A lab test, x-ray, or ultrasound for the baby"
+label variable m5_consultation3_g "510. Getting a vaccine for the baby"
+label variable m5_consultation3_h "510. Getting a vaccine for yourself"
+label variable m5_consultation3_i "510. TTo get medicine for yourself"
+label variable m5_consultation3_j "510. To get medicine for the baby"
+label variable m5_consultation3_oth "510. Other"
+label variable m5_consultation3_98 "510. DK"
+label variable m5_consultation3_99 "510. NR/RF"
+label variable m5_consultation3_998 "510. Unknown"
+label variable m5_consultation3_999 "510. Refuse to answer"
+label variable m5_consultation3_888 "510. No Information"
+label variable m5_consultation3_oth_text "Oth-510. For any other service, specify it "
+label variable m5_no_visit_a "511. No reason or the baby and I didnt need it"
+label variable m5_no_visit_b "511. You tried but were sent away (e.g., no appointment available)"
+label variable m5_no_visit_c "511. High cost (e.g., high out of pocket payment, not covered by insurance)"
+label variable m5_no_visit_d "511. Far distance (e.g., too far to walk or drive, transport not readily available"
+label variable m5_no_visit_e "511. Long waiting time (e.g., long line to access facility, long wait for the provider)"
+label variable m5_no_visit_f "511. Poor healthcare provider skills (e.g., spent too little time with patient, did not conduct a thorough exam)"
+label variable m5_no_visit_g "511. Staff dont show respect (e.g., staff is rude, impolite, dismissive)"
+label variable m5_no_visit_h "511. Medicines or equipment are not available (e.g., medicines regularly out of stock, equipment like X-ray machines broken or unavailable)"
+label variable m5_no_visit_i "511. COVID-19 fear"
+label variable m5_no_visit_j "511. Dont know where to go/too complicated"
+label variable m5_no_visit_k "511. Fear of discovering serious problem"
+label variable m5_no_visit_96 "511. Other"
+label variable m5_no_visit_98 "511. DK"
+label variable m5_no_visit_99 "511. NR/RF"
+label variable m5_no_visit_998 "511. Unknown"
+label variable m5_no_visit_999 "511. Refuse to answer"
+label variable m5_no_visit_888 "511. No Information"
+label variable m5_no_visit_oth "Oth-512. Specify other reasons that prevented you from receiving postnatal or postpartum care since the delivery "
+label variable m5_consultation1_carequality "601. Overall, how would you rate the quality of care that you received at the 1st new healthcare consultation facility?"
+label variable m5_consultation2_carequality "602. Overall, how would you rate the quality of care that you received at the 2nd new healthcare consultation facility?"
+label variable m5_consultation3_carequality "603. Overall, how would you rate the quality of care that you received at the 3rd new healthcare consultation facility?"
+label variable m5_701a "701a. Did your baby/babies receive their temperature taken (using a thermometer)?"
+label variable m5_701b "701b. Did your baby/babies receive their weight taken (using a scale)?"
+label variable m5_701c "701c. Did your baby/babies receive their length measured (using a measuring tape)?"
+label variable m5_701d "701d. Did your baby/babies receive their eyes examined?"
+label variable m5_701e "701e. Did your baby/babies receive their hearing checked?"
+label variable m5_701f "701f. Did your baby/babies receive their chest listened to with a stethoscope?"
+label variable m5_701g "701g. Did your baby/babies receive a blood test using a finger prick?"
+label variable m5_701h "701h. Did your baby/babies receive a malaria test?"
+label variable m5_701i "701i. Did your baby/babies receive any other test?"
+label variable m5_701_other "Oth-701i. Specify other test your baby/babies received?"
+label variable m5_702a "702a. Did you discuss about how often the baby eats?"
+label variable m5_702b "702b. Did you discuss what the baby should eat?"
+label variable m5_702c "702c. Did you discuss vaccinations for the baby?"
+label variable m5_702d "702d. Did you discuss the position the baby should sleep in? "
+label variable m5_702e "702e. Did you discuss danger signs or symptoms you should watch out for in the baby that would mean you should go to a health facility? "
+label variable m5_702f "702f. Did you discuss how you should play and interact with the baby?"
+label variable m5_702g "702g. Did you discuss that you should take the baby to the hospital or to see a specialist like a pediatrician or a neonatologist?"
+label variable m5_baby1_703a "703.1. I did not speak about this with a health care provider"
+label variable m5_baby1_703b "703.1. Provider told you that it was not serious, and there was nothing to be done)"
+label variable m5_baby1_703c "703.1. Provider to monitor the baby and come back if it got worse"
+label variable m5_baby1_703d "703.1. Provider told you to get medication"
+label variable m5_baby1_703e "703.1. Provider gave you advice on feeding"
+label variable m5_baby1_703f "703.1. Provider told you to get a lab test or imaging for the baby (e.g., blood tests, ultrasound, x-ray, heart echo)"
+label variable m5_baby1_703g "703.1. Provider told you to go to hospital or to see a specialist like a pediatrician or neonatologist)"
+label variable m5_baby1_703_96 "703.1. Other, specify"
+label variable m5_baby1_703_98 "703.1. DK"
+label variable m5_baby1_703_99 "703.1. NR/RF"
+label variable m5_baby1_703_998 "703.1. Unknown"
+label variable m5_baby1_703_999 "703.1. Refuse to answer"
+label variable m5_baby1_703_888 "703.1. No Information"
+label variable m5_baby1_703_other "Oth-703. Specify other thing that your health care provider told you to do "
+label variable m5_baby2_703a "703.2. I did not speak about this with a health care provider"
+label variable m5_baby2_703b "703.2. Provider told you that it was not serious, and there was nothing to be done)"
+label variable m5_baby2_703c "703.2. Provider to monitor the baby and come back if it got worse"
+label variable m5_baby2_703d "703.2. Provider told you to get medication"
+label variable m5_baby2_703e "703.2. Provider gave you advice on feeding"
+label variable m5_baby2_703f "703.2. Provider told you to get a lab test or imaging for the baby (e.g., blood tests, ultrasound, x-ray, heart echo)"
+label variable m5_baby2_703g "703.2. Provider told you to go to hospital or to see a specialist like a pediatrician or neonatologist)"
+label variable m5_baby2_703_96 "703.2. Other, specify"
+label variable m5_baby2_703_98 "703.2. DK"
+label variable m5_baby2_703_99 "703.2. NR/RF"
+label variable m5_baby2_703_998 "703.2. Unknown"
+label variable m5_baby2_703_999 "703.2. Refuse to answer"
+label variable m5_baby2_703_888 "703.2. No Information"
+label variable m5_baby2_703_other "Oth-703. Specify other thing that your health care provider told you to do "
+label variable m5_baby3_703a "703.3 I did not speak about this with a health care provider"
+label variable m5_baby3_703b "703.3 Provider told you that it was not serious, and there was nothing to be done"
+label variable m5_baby3_703c "703.3 Provider to monitor the baby and come back if it got worse"
+label variable m5_baby3_703d "703.3 Provider told you to get medication"
+label variable m5_baby3_703e "703.3 Provider gave you advice on feeding"
+label variable m5_baby3_703f "703.3 Provider told you to get a lab test or imaging for the baby (e.g., blood tests, ultrasound, x-ray, heart echo)"
+label variable m5_baby3_703g "703.3 Provider told you to go to hospital or to see a specialist like a pediatrician or neonatologist"
+label variable m5_baby3_703_96 "703.3 Other, specify"
+label variable m5_baby3_703_98 "703.3 DK"
+label variable m5_baby3_703_99 "703.3 NR/RF"
+label variable m5_baby3_703_998 "703.3 Unknown"
+label variable m5_baby3_703_999 "703.3 Refuse to answer"
+label variable m5_baby3_703_888 "703.3 No Information"
+label variable m5_baby3_703_other "Oth-703. Specify other thing that your health care provider told you to do"
+label variable m5_801a "801a. Did you get your blood pressure measured (with a cuff around your arm)?"
+label variable m5_801b "801b. Did you get your temperature taken (with a thermometer)?"
+label variable m5_801c "801c. Did you receive a vaginal exam?"
+label variable m5_801d "801d. Did you receive a blood draw?"
+label variable m5_801e "801e. Did you receive a blood test using a finger prick?"
+label variable m5_801f "801f. Did you receive an HIV test?"
+label variable m5_801g "801g. Did you receive a urine test?"
+label variable m5_801h "801h. Did you receive any other test or examination?"
+label variable m5_801_other "Oth-801. Since you last spoke to us, specify any other test you received"
+label variable m5_802 "802. Did a health care provider examine your c-section scar?"
+label variable m5_803a "803a. Did you discuss how to take care of your breasts with a health care provider?"
+label variable m5_803b "803b. Did you receive danger signs or symptoms you should watch out for in yourself that would mean you should go to a health facility with a health care provider?"
+label variable m5_803c "803c. Did you receive your level of anxiety or depression with a health care provider?"
+label variable m5_803d "803d. Did you receive your family planning options after the delivery?"
+label variable m5_803e "803e. Did you receive resuming sexual activity after birth?"
+label variable m5_803f "803f. Did you receive the importance of exercise or physical activity after giving birth?"
+label variable m5_803g "803g. Did you receive the importance of sleeping under a bed net?"
+label variable m5_804a "804a. Did you have a session of psychological counseling or therapy with any type of professional?"
+label variable m5_804b  "804b. How many of these sessions did you have since we last spoke?"
+label variable m5_804c "804c. How many minutes did this/these visit(s) last on average?"
+label variable m5_901a "901a. Did you get Iron or folic acid pills for yourself?"
+label variable m5_901b "901b. Did you get Iron injection for yourself? "
+label variable m5_901c "901c. Did you get Calcium pills for yourself?"
+label variable m5_901d "901d. Did you get Multivitamins for yourself? "
+label variable m5_901e "901e. Did you get Food supplements like Super Cereal or Plumpynut for yourself?"
+label variable m5_901f "901f. Did you get Medicine for intestinal worms for yourself?"
+label variable m5_901g "901g. Did you get Medicine for malaria for yourself?"
+label variable m5_901h "901h. Did you get Medicine for HIV for yourself?"
+label variable m5_901i "901i. Did you get Medicine for your emotions, nerves, depression, or mental health for yourself?"
+label variable m5_901j "901j. Did you get Medicine for hypertension for yourself?"
+label variable m5_901k "901k. Did you get Medicine for diabetes, including injections of insulin for yourself?"
+label variable m5_901l "901l. Did you get Antibiotics for an infection for yourself?"
+label variable m5_901m "901m. Did you get Aspirin for yourself?"
+label variable m5_901n "901n. Did you get Paracetamol or other pain relief drugs for yourself?"
+label variable m5_901o "901o. Did you get Contraceptive pills for yourself?"
+label variable m5_901p "901p. Did you get Contraceptive injection for yourself?"
+label variable m5_901q "901q. Did you get other contraception method for yourself?"
+label variable m5_901r "901r. Did you get antifungal medicine for yourself?"
+label variable m5_901s "901s. Did you get any other medicine or supplement for yourself?"
+label variable m5_901s_other "Oth-901s. Specify any other medicine or supplement you got since we last spoke"
+label variable m5_902k "902k. Did your baby/babies get Baby formula? (902a in ET)"
+label variable m5_902l "902l. Did your baby/babies get Food supplements like Super Cereal or Plumpy nut? (902b in ET)"
+label variable m5_902b "902b. Did your baby/babies get Vitamin A supplements? (902c in ET)"
+label variable m5_902c "902c. Did your baby/babies get Vitamin D supplements? (902d in ET)"
+label variable m5_902d "902d. Did your baby/babies get Oral rehydration salts? (902e in ET)"
+label variable m5_902m "902m. Did your baby/babies get Antiseptic ointment? (902f in ET)"
+label variable m5_902f  "902f. Did your baby/babies get Antibiotics for an infection? (902g in ET)"
+label variable m5_902h  "902h. Did your baby/babies get Medicine for malaria?"
+label variable m5_902i  "902i. Did your baby/babies get Medicine for HIV?"
+label variable m5_902j  "902j. Did your baby/babies get any other medicine or supplement?"
+label variable m5_902_other "Oth-902j. Specify another medicine or supplement your baby/babies took"
+label variable m5_903a "903a. Did your baby/babies get a vaccine for BCG against tuberculosis?"
+label variable m5_903b "903b. Did your baby/babies get a vaccine against polio that is taken either orally, usually two drops in the mouth, or through an injection to prevent polio?"
+label variable m5_903c "903c. Did your baby/babies get a pentavalent vaccination"
+label variable m5_903d "903d. Did your baby/babies get a pneumococcal vaccination?"
+label variable m5_903e "903e. Did your baby/babies get a rotavirus vaccination?"
+label variable m5_903f "903f. Did your baby/babies get an injection to protect against polio?"
+label variable m5_903_other "903g. Did your baby/babies get any other vaccines or immunizations?"
+label variable m5_903_oth_text "Oth-903g. Specify any other vaccines or immunizations your baby/babies taken"
+label variable m5_904  "904. Where did the baby get these vaccines?"
+label variable m5_905 "905. In total, how much did you pay for these new medications, supplements and vaccines for yourself or the baby/babies?"
+label variable m5_1001 "1001. Did you pay any money out of your pocket for these new visits?"
+label variable m5_1002a_yn "1002a. Did you spend on Registration/ Consultation?"
+label variable m5_1002a "Oth-1002a. How much money did you spend on registration?"
+label variable m5_1002b_yn "1002b. Did you spend money on Test or investigations (lab tests, ultrasound etc.)?"
+label variable m5_1002b "Oth-1002b. How much money did you spend on Test or investigations?"
+label variable m5_1002c_yn "1002c. Did you spend money on transport (round trip) including that of the person accompanying you?"
+label variable m5_1002c "Oth-1002c. How much money did you spend on Transport (round trip) including that of the person accompanying you?"
+label variable m5_1002d_yn "1002d. Did you spend money on Food and accommodation including that of person accompanying you?"
+label variable m5_1002d "Oth-1002d. How much money did you spend on Food and accommodation including that of person accompanying you?"
+label variable m5_1002e_yn "1002e. Did you spend money on Other"
+label variable m5_1002e "Oth-1002e. How much money did you spend on other services?"
+label variable m5_1003 "1003a. So, in total you spent ____"
+label variable m5_1003_confirm "1003b. Is that correct?"
+label variable m5_1004 "1004. So how much in total would you say you spent?"
+label variable m5_1005a "1005. Current income of any household members)"
+label variable m5_1005b "1005. Savings (e.g., bank account)"
+label variable m5_1005c "1005. Payment or reimbursement from a health insurance plan"
+label variable m5_1005d "1005. Sold items (e.g., furniture, animals, jewellery, furniture)"
+label variable m5_1005e "1005. Family members or friends from outside the household"
+label variable m5_1005f "1005. Borrowed (from someone other than a friend or family)"
+label variable m5_1005_other "1005. Other (please specify)"
+label variable m5_1005_998 "1005. Unknown"
+label variable m5_1005_999 "1005. Refuse to answer"
+label variable m5_1005_888 "1005. No Information"
+label variable m5_1005_oth_text "Oth-1005. Specify other financial source you paid your cost for the services you received"
+label variable m5_1101 "1101. Has anyone ever hit, slapped, kicked, or done anything else to hurt you physically?  "
+label variable m5_1102 "1102. Who did these things to physically hurt you?"
+label variable m5_1102_other "Oth-1102. Other (specify)"
+label variable m5_1103 "1103. Has anyone ever said or done something to humiliate you, insulted you or made you feel bad about yourself?"
+label variable m5_1104 "1104. Who did these things to emotionally hurt you?"
+label variable m5_1104_other "Oth-1104. Other (specify)"
+label variable m5_1105 "1105. Did a health provider discuss with you where you can seek support for these things?"
+label variable m5_1201 "1201. How satisfied you are with the health services you received throughout your pregnancy and delivery?"
+label variable m5_1202 "1202. Monthly household income"
+label variable m5_height  "1301. HEIGHT IN CENTIMETERS"
+label variable m5_weight  "1302. WEIGHT IN KILOGRAMS"
+label variable m5_muac "1303. Upper arm circumference of the woman."
+label variable m5_sbp1 "TIME 1 (Systolic)"
+label variable m5_dbp1 "TIME 1 (Diastolic)"
+label variable m5_hr1 "TIME 1 (Pulse rate) per minute"
+label variable m5_sbp2 "TIME 2 (Systolic)"
+label variable m5_dbp2 "TIME 2 (Diastolic)"
+label variable m5_hr2 "TIME 2 (Pulse rate) per minute"
+label variable m5_sbp3 "TIME 3 (Systolic)"
+label variable m5_dbp3 "TIME 3 (Diastolic)"
+label variable m5_hr3 "TIME 3 (Pulse rate) per minute"
+label variable m5_anemiatest  "1306. Anemia test"
+label variable m5_hb_level "1307. HEMOGLOBIN LEVEL FROM TEST PERFORMED BY DATA COLLECTOR"
+label variable m5_baby1_weight "1401. Babys weight in kg"
+label variable m5_baby2_weight "1401.2: Second Babys weight in kg"
+label variable m5_baby3_weight "1401.3: Third Babys weight in kg"
+label variable m5_baby1_length "1402. Babys length in centimeters"
+label variable m5_baby2_length "1402.2: Second Babys length in cm"
+label variable m5_baby3_length "1402.3: Third Babys length in cm"
+label variable m5_baby1_hc "1403. Babys head circumference in cm"
+label variable m5_baby2_hc "1403.2: Second Babys head circumference in cm"
+label variable m5_baby3_hc "1403.3: Third Babys head circumference in cm"
+label variable m5_complete "Complete?"
+
+			
 ***** note (line 5874 to 5947) 
 * lab variables from maternal card (by Wen-Chien on 2024.04.19)	
 lab var mcard_date "Date from maternal card"
@@ -5938,14 +7163,6 @@ lab var mcard_arv_px_type "Present pregnancy: ARV type"
 lab var mcard_remarks "Present pregnancy: remarks"
 lab var mcard_action_advice_counseling "Action, advice and counseling from maternal card"
 lab var mcard_next_appt "Next appointment made"
-
-**** Wen-Chien note : Variables that I am unsure about how to label (2024.04.19)
-* mcard_other_dx mcard_dx mcard_hsitory: these two seemed to both refer to other diseases or history. maternal card 1, # 19 
-* mcard_chest_abn_no_info mcard_chest_abn_ref mcard_chest_abn_unk. Refer to maternal card 3, generanl exam chest abnormality
-* mcard_prev_survey: Is it previous surgery, not previous survey. Refer to maternal card 1. obstetric history # 6
-* two about danger signs: mcard_danger_signs mcard_danger_signs2. Is one for a specific visit?
-* mcard_pelvic_mass1_ mcard_pallor2: seemed to refer to pelvic mass and pallor in a specific visit?
-* mcard_last_preg mcard_vaginal_dis mcard_fu_visit mcard_consent
 	
 *===============================================================================
 	* STEP FIVE: ORDER VARIABLES
@@ -5956,7 +7173,53 @@ drop first_name family_name phone_number m1_513b ///
 	 m1_515b_zone m1_515c_ward m1_515d_house m1_516 m1_517 m1_518 m1_519_district ///
 	 m1_519_village m1_519_ward m1_714d 
 	 
-order m1_* m2_* m3_* m4_* mcard_*, sequential
+order m1_* m2_* m3_* m4_* m5_* mcard_*, sequential
+
+
+*****************************************
+*****************************************
+*****************************************
+
+* Because M3 uses a lot of non numeric variable names we will need to manually order some of them
+order m3_start_p1 m3_permission m3_date m3_time m3_start_p2 m3_permission_p2 m3_date_p2 m3_time_p2  m3_201a m3_201b m3_201c m3_202 m3_birth_or_ended, before(m3_303a)
+order m3_baby1_name m3_baby2_name m3_baby3_name ///
+m3_baby1_gender m3_baby2_gender m3_baby3_gender ///
+m3_baby1_age m3_baby1_weight m3_baby2_weight m3_baby3_weight ///
+m3_baby1_size m3_baby2_size m3_baby3_size ///
+m3_baby1_health m3_baby2_health m3_baby3_health ///
+m3_baby1_feed_a m3_baby1_feed_b m3_baby1_feed_c m3_baby1_feed_d m3_baby1_feed_e m3_baby1_feed_f m3_baby1_feed_g m3_baby1_feed_96 m3_baby1_feed_other m3_baby1_feed_99 m3_baby1_feed_888 m3_baby1_feed_998 m3_baby1_feed_999 ///
+m3_baby2_feed_a m3_baby2_feed_b m3_baby2_feed_c m3_baby2_feed_d m3_baby2_feed_e m3_baby2_feed_g m3_baby2_feed_96 m3_baby2_feed_other m3_baby2_feed_99 m3_baby2_feed_888 m3_baby2_feed_998 m3_baby2_feed_999 /// // note: there is no "f" option for baby2 
+m3_baby3_feed_a m3_baby3_feed_b m3_baby3_feed_c m3_baby3_feed_d m3_baby3_feed_e m3_baby3_feed_g m3_baby3_feed_96 m3_baby3_feed_other m3_baby3_feed_99 m3_baby3_feed_888 m3_baby3_feed_998 m3_baby3_feed_999 /// // note: there is no "f" option for baby3 
+m3_breastfeeding m3_breastfeeding_fx_et ///
+m3_baby1_sleep m3_baby1_feed m3_baby1_breath m3_baby1_stool m3_baby1_mood m3_baby1_skin m3_baby1_interactivity ///
+m3_baby2_sleep m3_baby2_feed m3_baby2_breath m3_baby2_stool m3_baby2_mood m3_baby2_skin m3_baby2_interactivity ///
+m3_baby3_sleep m3_baby3_feed m3_baby3_breath m3_baby3_stool m3_baby3_mood m3_baby3_skin m3_baby3_interactivity ///
+m3_baby1_born_alive m3_baby2_born_alive m3_baby3_born_alive ///
+m3_313a_baby1 m3_313b_baby1 m3_313a_baby2 m3_313b_baby2 m3_313a_baby3 m3_313b_baby3 ///
+m3_death_cause_baby1_a m3_death_cause_baby1_b m3_death_cause_baby1_c m3_death_cause_baby1_d m3_death_cause_baby1_e m3_death_cause_baby1_f m3_death_cause_baby1_g m3_death_cause_baby1_96 m3_death_cause_baby1_other m3_death_cause_baby1_888 m3_death_cause_baby1_998 m3_death_cause_baby1_999 ///
+m3_death_cause_baby2_a m3_death_cause_baby2_b m3_death_cause_baby2_c m3_death_cause_baby2_d m3_death_cause_baby2_e m3_death_cause_baby2_f m3_death_cause_baby2_g m3_death_cause_baby2_96 m3_death_cause_baby2_other m3_death_cause_baby2_888 m3_death_cause_baby2_998 m3_death_cause_baby2_999 ///
+m3_death_cause_baby3_a m3_death_cause_baby3_b m3_death_cause_baby3_c m3_death_cause_baby3_d m3_death_cause_baby3_e m3_death_cause_baby3_f m3_death_cause_baby3_g m3_death_cause_baby3_96 m3_death_cause_baby3_other m3_death_cause_baby3_888 m3_death_cause_baby3_998 m3_death_cause_baby3_999 ///
+, after(m3_303d)
+
+
+order m3_consultation_1 m3_consultation_referral_1 m3_consultation1_reason_a m3_consultation1_reason_b m3_consultation1_reason_c m3_consultation1_reason_d m3_consultation1_reason_e m3_consultation1_reason_96 m3_consultation1_reason_other m3_consultation1_reason_888 m3_consultation1_reason_998 m3_consultation1_reason_999 ///
+m3_consultation_2 m3_consultation_referral_2 m3_consultation2_reason_a m3_consultation2_reason_b m3_consultation2_reason_c m3_consultation2_reason_d m3_consultation2_reason_e m3_consultation2_reason_96 m3_consultation2_reason_other m3_consultation2_reason_888 m3_consultation2_reason_998 m3_consultation2_reason_999 ///
+m3_consultation_3 m3_consultation_referral_3 m3_consultation3_reason_a m3_consultation3_reason_b m3_consultation3_reason_c m3_consultation3_reason_d m3_consultation3_reason_e m3_consultation3_reason_96 m3_consultation3_reason_other m3_consultation3_reason_888 m3_consultation3_reason_998 m3_consultation3_reason_999 ///
+m3_consultation_4 m3_consultation_referral_4 m3_consultation4_reason_a m3_consultation4_reason_b m3_consultation4_reason_c m3_consultation4_reason_d m3_consultation4_reason_e m3_consultation4_reason_96 m3_consultation4_reason_other m3_consultation4_reason_888 m3_consultation4_reason_998 m3_consultation4_reason_999 ///
+m3_consultation_5 m3_consultation_referral_5 m3_consultation5_reason_a m3_consultation5_reason_b m3_consultation5_reason_c m3_consultation5_reason_d m3_consultation5_reason_e m3_consultation5_reason_96 m3_consultation5_reason_other m3_consultation5_reason_888 m3_consultation5_reason_998 m3_consultation5_reason_999 ///
+, after(m3_402)
+
+order m3_518_other_complications, after(m3_518)
+
+order m3_baby1_issues_a m3_baby1_issues_b m3_baby1_issues_c m3_baby1_issues_d m3_baby1_issues_e m3_baby1_issues_f m3_baby1_issues_96 m3_baby1_issues_98 m3_baby1_issues_99 m3_baby1_issues_888 m3_baby1_issues_998 m3_baby1_issues_999 ///
+m3_baby2_issues_a m3_baby2_issues_b m3_baby2_issues_c m3_baby2_issues_d m3_baby2_issues_e m3_baby2_issues_f m3_baby2_issues_96 m3_baby2_issues_98 m3_baby2_issues_99 m3_baby2_issues_888 m3_baby2_issues_998 m3_baby2_issues_999 ///
+m3_baby3_issues_a m3_baby3_issues_b m3_baby3_issues_c m3_baby3_issues_d m3_baby3_issues_e m3_baby3_issues_f m3_baby3_issues_96 m3_baby3_issues_98 m3_baby3_issues_99 m3_baby3_issues_888 m3_baby3_issues_998 m3_baby3_issues_999 ///
+, before(m3_708a)
+
+*****************************************
+*****************************************
+*****************************************
+
 
 order m2_start m2_date m2_date m2_permission m2_103 m2_time_start m2_maternal_death_reported m2_ga m2_hiv_status ///
 	 m2_date_of_maternal_death m2_maternal_death_learn m2_maternal_death_learn_other m2_111 m2_111_other m2_201,after(m1_end_time)
@@ -5974,14 +7237,14 @@ m1_time_2_pulse_rate m1_bp_time_3_systolic m1_bp_time_3_diastolic m1_pulse_rate_
 	
 order m1_phq9a m1_phq9b m1_phq9c m1_phq9d m1_phq9e m1_phq9f m1_phq9g m1_phq9h m1_phq9i, after(m1_205e)
 
-order country redcap_record_id order_redcap study_id interviewer_name_a7 redcap_event_name redcap_repeat_instrument redcap_repeat_instance ///
+order country redcap_record_id order_redcap respondentid  interviewer_name_a7 redcap_event_name redcap_repeat_instrument redcap_repeat_instance ///
 	  redcap_data_access_group m1_date m1_start_time country site study_site study_site_sd facility facility_other sampstrata ///
 	  facility_type permission care_self site sampstrata study_site study_site_sd facility interviewer_id permission ///
-	  care_self zone_live b5anc b6anc_first b6anc_first_conf continuecare b7eligible respondentid mobile_phone ///
+	  care_self zone_live b5anc b6anc_first b6anc_first_conf continuecare b7eligible  mobile_phone ///
 	  flash kebele_malaria kebele_intworm
 *===============================================================================
 	* SAVE A LONG FORM DATASET
-save "$et_data_final/eco_m1-m4_et_long.dta", replace
+save "$et_data_final/eco_m1-m5_et_long.dta", replace
 
 *===============================================================================
 	* STEP SIX: CONVERT TO A WIDE FORM DATASET
@@ -5989,38 +7252,56 @@ save "$et_data_final/eco_m1-m4_et_long.dta", replace
 	preserve 
 		keep if redcap_event_name =="maternal_integrate_arm_1"
 		keep redcap_record_id mcard*
+		foreach v of varlist * {
+			char `v'[Module] maternal_card
+		}
 		save "$et_data_final/tmpcard", replace 
 	restore 
 	
 	preserve
 		keep if redcap_event_name =="module_1_arm_1"
 		keep country-kebele_intworm m1* 
+		foreach v of varlist * {
+			char `v'[Module] 1
+		}
 		save "$et_data_final/tmpm1", replace 
 	restore 
 	
 	preserve
 		keep if redcap_event_name =="module_2_arm_1"
 		keep redcap_record_id redcap_repeat_instance m2_*
+		foreach v of varlist * {
+			char `v'[Module] 2
+		}
 		save "$et_data_final/tmpm2", replace 
 	restore 
 	
 	preserve
 		keep if redcap_event_name =="module_3_arm_1"
 		keep redcap_record_id m3_*
+		foreach v of varlist * {
+			char `v'[Module] 3
+		}
 		save "$et_data_final/tmpm3", replace 
 	restore 
 	
 	preserve
 		keep if redcap_event_name =="module_4_arm_1"
 		keep redcap_record_id m4_*
+		foreach v of varlist * {
+			char `v'[Module] 4
+		}
 		save "$et_data_final/tmpm4", replace 
 	restore 
 	
-	/*preserve
+	preserve
 		keep if redcap_event_name =="module_5_arm_1"
 		keep redcap_record_id m5_*
+		foreach v of varlist * {
+			char `v'[Module] 5
+		}
 		save "$et_data_final/tmpm5", replace 
-	restore */
+	restore 
 	
 	* Reshape M2
 	
@@ -6067,14 +7348,16 @@ save "$et_data_final/eco_m1-m4_et_long.dta", replace
 			drop _merge 
 		merge 1:1 redcap_record_id using "$et_data_final/tmpm4"
 		drop _merge
-	
-	
+		merge 1:1 redcap_record_id using "$et_data_final/tmpm5"
+		drop _merge
+		
 	rm "$et_data_final/tmpcard.dta" 
 	rm "$et_data_final/tmpm1.dta" 
 	rm "$et_data_final/tmpm2.dta" 
 	rm "$et_data_final/tmpm3.dta" 
 	rm "$et_data_final/tmpm4.dta" 
-		
+	rm "$et_data_final/tmpm5.dta"
+	
 *===============================================================================
 	* RE-LABELING M2 VARS
 
@@ -6114,22 +7397,22 @@ label variable m2_204g_et`i' "204g. Since you last spoke to us, have you experie
 label variable m2_204h_et`i' "204h. Since you last spoke to us, have you experienced RH isoimmunization?"
 label variable m2_204i`i' "204i. Since you last spoke to us, have you experienced any other major health problems?"
 label variable m2_204_other`i' "204i-oth. Specify any other feeling since last visit"
-label variable m2_205a`i' "205a. Over the past 2 weeks, on how many days have you been bothered by little interest or pleasure in doing things?"
-label variable m2_205b`i' "205b. Over the past 2 weeks, on how many days have you been bothered by feeling down, depressed, or hopeless?"
-label variable m2_205c`i' "205c. Over the past 2 weeks, on how many days have you been bothered by trouble falling or staying asleep, or sleeping too much?"
-label variable m2_205d`i' "205d. Over the past 2 weeks, on how many days have you been bothered by feeling tired or having little energy?"
-label variable m2_205e`i' "205e. Over the past 2 weeks, on how many days have you been bothered by poor appetite or overeating?"
-label variable m2_205f`i' "205f. Over the past 2 weeks, on how many days have you been bothered by feeling bad about yourself or that you are a failure or have let yourself or your family down?"
-label variable m2_205g`i' "205g. Over the past 2 weeks, on how many days have you been bothered by trouble concentrating on things, such as your work or home duties?"
-label variable m2_205h`i' "205h. Over the past 2 weeks, on how many days have you been bothered by moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
-label variable m2_205i`i' "205i. Over the past 2 weeks, on how many days have you been bothered by Thoughts that you would be better off dead, or thoughts of hurting yourself in some way?"
+label variable m2_205a`i' "205a. How many days have you been bothered by little interest or pleasure in doing things?"
+label variable m2_205b`i' "205b. How many days have you been bothered by feeling down, depressed, or hopeless?"
+label variable m2_205c`i' "205c. How many days have you been bothered by trouble falling or staying asleep, or sleeping too much?"
+label variable m2_205d`i' "205d. How many days have you been bothered by feeling tired or having little energy?"
+label variable m2_205e`i' "205e. How many days have you been bothered by poor appetite or overeating?"
+label variable m2_205f`i' "205f. How many days have you been bothered by feeling bad about yourself or that you are a failure or have let yourself or your family down?"
+label variable m2_205g`i' "205g. How many days have you been bothered by trouble concentrating on things, such as your work or home duties?"
+label variable m2_205h`i' "205h. How many days have you been bothered by moving or speaking so slowly that other people could have noticed? Or so fidgety or restless that you have been moving a lot more than usual?"
+label variable m2_205i`i' "205i. How many days have you been bothered by Thoughts that you would be better off dead, or thoughts of hurting yourself in some way?"
 label variable m2_206`i' "206. How often do you currently smoke cigarettes or use any other type of tobacco? Types of tobacco includes: Snuff tobacco, Chewing tobacco,  Cigar"
 label variable m2_207`i' "207. How often do you currently chewing khat?(Interviewer: Inform that Khat is a leaf green plant use as stimulant and chewed in Ethiopia)"
 label variable m2_208`i' "208. How often do you currently drink alcohol or use any other type of alcoholic?   A standard drink is any drink containing about 10g of alcohol, 1 standard drink= 1 tasa or wancha of (tella or korefe or borde or shameta), ½ birile of  Tej, 1 melekiya of Areke, 1 bottle of beer, 1 single of draft, 1 melkiya of spris(Uzo, Gine, Biheraw etc) and 1 melekiya of Apratives"
-label variable m2_301`i' "301. Since we last spoke, did you have any new healthcare consultations for yourself, or not?"
+label variable m2_301`i' "301. id you have any new healthcare consultations for yourself, or not?"
 label variable m2_302`i' "302. Since we last spoke, how many new healthcare consultations have you had for yourself?"
 label variable m2_303a`i' "303a. Where did this/this new first healthcare consultation(s) for yourself take place?"
-label variable m2_303b`i' "303b.  Where did the 2nd healthcare consultation(s) for yourself take place?"
+label variable m2_303b`i' "303b. Where did the 2nd healthcare consultation(s) for yourself take place?"
 label variable m2_303c`i' "303c. Where did the 3rd healthcare consultation(s) for yourself take place?"
 label variable m2_303d`i' "303d. Where did the 4th healthcare consultation(s) for yourself take place?"
 label variable m2_303e`i' "303e. Where did the 5th healthcare consultation(s) for yourself take place?"
@@ -6187,41 +7470,41 @@ label variable m2_316_3`i' "316. Was the fourth consultation for any of the foll
 label variable m2_316_4`i' "316. Was the fourth consultation for any of the following? To pick up medicine"
 label variable m2_316_5`i' "316. Was the fourth consultation for any of the following? To get a vaccine"
 label variable m2_316_96`i' "316. Was the fourth onsultation for any of the following? Other reasons"
-label variable m2_314_888_et`i' "316. No information"
-label variable m2_314_998_et`i' "316. Unknown"
-label variable m2_314_999_et`i' "316. Refuse to answer"
+label variable m2_316_888_et`i' "316. No information"
+label variable m2_316_998_et`i' "316. Unknown"
+label variable m2_316_999_et`i' "316. Refuse to answer"
 label variable m2_316_other`i' "316-oth. Specify other reason for the fourth consultation"
 label variable m2_317`i' "317. Was the fifth consultation is for a routine antenatal care visit?"
 label variable m2_318`i' "318. Was the fifth consultation is for a referral from your antenatal care provider?"
-label variable m2_317_1`i' "319. Was the fifth consultation is for any of the following? A new health problem, including an emergency or an injury"
-label variable m2_317_2`i' "319. Was the fifth consultation is for any of the following? An existing health problem"
-label variable m2_317_3`i' "319. Was the fifth consultation is for any of the following? A lab test, x-ray, or ultrasound"
-label variable m2_317_4`i' "319. Was the fifth consultation is for any of the following? To pick up medicine"
-label variable m2_317_5`i' "319. Was the fifth consultation is for any of the following? To get a vaccine"
-label variable m2_317_96`i' "319. Was the fifth consultation is for any of the following? Other reasons"
-label variable m2_317_888_et`i' "319. No information"
-label variable m2_317_998_et`i' "319. Unknown"
-label variable m2_317_999_et`i' "319. Refuse to answer"
+label variable m2_319_1`i' "319. Was the fifth consultation is for any of the following? A new health problem, including an emergency or an injury"
+label variable m2_319_2`i' "319. Was the fifth consultation is for any of the following? An existing health problem"
+label variable m2_319_3`i' "319. Was the fifth consultation is for any of the following? A lab test, x-ray, or ultrasound"
+label variable m2_319_4`i' "319. Was the fifth consultation is for any of the following? To pick up medicine"
+label variable m2_319_5`i' "319. Was the fifth consultation is for any of the following? To get a vaccine"
+label variable m2_319_96`i' "319. Was the fifth consultation is for any of the following? Other reasons"
+label variable m2_319_888_et`i' "319. No information"
+label variable m2_319_998_et`i' "319. Unknown"
+label variable m2_319_999_et`i' "319. Refuse to answer"
 label variable m2_319_other`i' "319-oth. Specify other reason for the fifth consultation"
-label variable m2_320_a`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? No reason or you didn't need it"
-label variable m2_320_b`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? You tried but were sent away (e.g., no appointment available) "
-label variable m2_320_c`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? High cost (e.g., high out of pocket payment, not covered by insurance)"
-label variable m2_320_d`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Far distance (e.g., too far to walk or drive, transport not readily available)"
-label variable m2_320_e`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Long waiting time (e.g., long line to access facility, long wait for the provider)"
-label variable m2_320_f`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Poor healthcare provider skills (e.g., spent too little time with patient, did not conduct a thorough exam)"
-label variable m2_320_g`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Staff don't show respect (e.g., staff is rude, impolite, dismissive)"
-label variable m2_320_h`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Medicines or equipment are not available (e.g., medicines regularly out of stock, equipment like X-ray machines broken or unavailable)"
-label variable m2_320_i`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 restrictions (e.g., lockdowns, travel restrictions, curfews) "
-label variable m2_320_j`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 fear"
-label variable m2_320_k`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Don't know where to go/too complicated"
-label variable m2_320_l`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Fear of discovering serious problem"
+label variable m2_320_0`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? No reason or you didn't need it"
+label variable m2_320_1`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? You tried but were sent away (e.g., no appointment available) "
+label variable m2_320_2`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? High cost (e.g., high out of pocket payment, not covered by insurance)"
+label variable m2_320_3`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Far distance (e.g., too far to walk or drive, transport not readily available)"
+label variable m2_320_4`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Long waiting time (e.g., long line to access facility, long wait for the provider)"
+label variable m2_320_5`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Poor healthcare provider skills (e.g., spent too little time with patient, did not conduct a thorough exam)"
+label variable m2_320_6`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Staff don't show respect (e.g., staff is rude, impolite, dismissive)"
+label variable m2_320_7`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Medicines or equipment are not available (e.g., medicines regularly out of stock, equipment like X-ray machines broken or unavailable)"
+label variable m2_320_8`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 restrictions (e.g., lockdowns, travel restrictions, curfews) "
+label variable m2_320_9`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? COVID-19 fear"
+label variable m2_320_10`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Don't know where to go/too complicated"
+label variable m2_320_11`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Fear of discovering serious problem"
 label variable m2_320_96`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Other, specify"
 label variable m2_320_99`i' "320. Are there any reasons that prevented you from receiving more antenatal care since you last spoke to us? Refused"
 label variable m2_320_888_et`i' "320. No information"
 label variable m2_320_998_et`i' "320. Unknown"
 label variable m2_320_999_et`i' "320. Refuse to answer"
 label variable m2_320_other`i' "320-oth. Specify other reason preventing receiving more antenatal care"
-label variable m2_321`i' "321. Other than in-person visits, did you have contacted with a health care provider by phone, SMS, or web regarding your pregnancy?"
+label variable m2_321`i' "321. Other than in-person visits, did you have contacted by phone, SMS, or web regarding your pregnancy?"
 label variable m2_401`i' "401. Overall, how would you rate the quality of care that you received from the health facility where you took the 1st consultation?"
 label variable m2_402`i' "402. Overall, how would you rate the quality of care that you received from the health facility where you took the 2nd consultation?"
 label variable m2_403`i' "403. Overall, how would you rate the quality of care that you received from the health facility where you took the 3rd consultation?"
@@ -6235,7 +7518,7 @@ label variable m2_501e`i' "501e.  Since you last spoke to us, did you get a urin
 label variable m2_501f`i' "501f. Since you last spoke to us, did you get an ultrasound (that is, when a probe is moved on your belly to produce a video of the baby on a screen)?"
 label variable m2_501g`i' "501g.  Since you last spoke to us, did you get any other tests?"
 label variable m2_501g_other`i' "501g-oth. Specify any other test you took since you last spoke to us"
-label variable m2_502`i' "502. Since we last spoke, did you receive any new test results from a health care provider?   By that I mean, any result from a blood or urine sample or from blood pressure measurement.Do not include any results that were given to you during your first antenatal care visit or during the first survey, only new ones."
+label variable m2_502`i' "502. id you receive any new test results from a health care provider?   By that I mean, any result from a blood or urine sample or from blood pressure measurement.Do not include any results that were given to you during your first antenatal care visit or during the first survey, only new ones."
 label variable m2_503a`i' "503a. Remember that this information will remain confidential. Did you receive a result for Anemia?"
 label variable m2_503b`i' "503b. Remember that this information will remain confidential. Did you receive a result for HIV?"
 label variable m2_503c`i' "503c. Remember that this information will remain confidential. Did you receive a result for HIV viral load?"
@@ -6256,14 +7539,14 @@ label variable m2_506b`i' "506b. Since you last spoke to us, did you and a healt
 label variable m2_506c`i' "506c. Since you last spoke to us, did you and a healthcare provider discuss about care for the newborn when he or she is born such as warmth, hygiene, breastfeeding, or the importance of postnatal care?"
 label variable m2_506d`i' "506d. Since you last spoke to us, did you and a healthcare provider discuss about family planning options for after delivery?"
 label variable m2_507`i' "507. What did the health care provider tell you to do regarding these new symptoms?"
-label variable m2_508a`i' "508a. Since we last spoke, did you have a session of psychological counseling or therapy with any type of professional?  This could include seeing a mental health professional (like a phycologist, social worker, nurse, spiritual advisor or healer) for problems with your emotions or nerves."
-label variable m2_508b_number`i' "508b. Do you know the number of psychological counseling or therapy session you had?"
-label variable m2_508b_last`i' "508b. How many of these sessions did you have since you last spoke to us?"
-label variable m2_508c`i' "508c. Do you know how long this/these visits took?"
-label variable m2_508d`i' "508d. How many minutes did this/these visit(s) last on average?"
-label variable m2_509a`i' "509a.  Since we last spoke, did a healthcare provider tells you that you needed to go see a specialist like an obstetrician or a gynecologist?"
-label variable m2_509b`i' "509b. Since we last spoke, did a healthcare provider tells you that you needed to go to the hospital for follow-up antenatal care?"
-label variable m2_509c`i' "509c. Since we last spoke, did a healthcare provider tell you that you will need a C-section?"
+label variable m2_508a`i' "508a. id you have a session of psychological counseling or therapy with any type of professional?  This could include seeing a mental health professional (like a phycologist, social worker, nurse, spiritual advisor or healer) for problems with your emotions or nerves."
+label variable m2_508b_yn`i' "508b. Do you know the number of psychological counseling or therapy session you had?"
+label variable m2_508b_num`i' "508b. How many of these sessions did you have since you last spoke to us?"
+label variable m2_508c_yn`i' "508c. Do you know how long this/these visits took?"
+label variable m2_508c_time`i' "508d. How many minutes did this/these visit(s) last on average?"
+label variable m2_509a`i' "509a.  id a healthcare provider tells you that you needed to go see a specialist like an obstetrician or a gynecologist?"
+label variable m2_509b`i' "509b. id a healthcare provider tells you that you needed to go to the hospital for follow-up antenatal care?"
+label variable m2_509c`i' "509c. id a healthcare provider tell you that you will need a C-section?"
 label variable m2_601a`i' "601a. Did you get Iron or folic acid pills?"
 label variable m2_601b`i' "601b. Did you get Calcium pills?"
 label variable m2_601c`i' "601c. Did you get Multivitamins?"
@@ -6285,18 +7568,18 @@ label variable m2_603`i' "603. Are you currently taking iron and folic acid pill
 label variable m2_604`i' "604. How often do you take iron and folic acid pills?"
 label variable m2_701`i' "701. I would now like to ask about the cost of these new health care visits.  Did you pay any money out of your pocket for these new visits, including for the consultation or other indirect costs like your transport to the facility?  Do not include the cost of medicines that you have already told me about."
 label variable m2_702a`i' "702a. Did you spend money on Registration/Consultation?"
-label variable m2_702a_other`i' "702a-oth. How much money did you spend on Registration/Consultation?"
+label variable m2_702a_cost`i' "702a-oth. How much money did you spend on Registration/Consultation?"
 label variable m2_702b`i' "702b. Did you spend money on Test or investigations (lab tests, ultrasound etc.?"
-label variable m2_702b_other`i' "702b-oth. How much money did you spend on Test or investigations (lab tests, ultrasound etc.)"
+label variable m2_702b_cost`i' "702b-oth. How much money did you spend on Test or investigations (lab tests, ultrasound etc.)"
 label variable m2_702c`i' "702c. Did you spend money on Transport (round trip) including that of the person accompanying you?"
-label variable m2_702c_other`i' "702c-oth. How much money did you spend on Transport (round trip) including that of the person accompanying you?"
+label variable m2_702c_cost`i' "702c-oth. How much money did you spend on Transport (round trip) including that of the person accompanying you?"
 label variable m2_702d`i' "702d. Did you spend money on Food and accommodation including that of person accompanying you?"
-label variable m2_702d_other`i' "702d-oth. How much money did you spend on Food and accommodation including that of person accompanying you?"
+label variable m2_702d_cost`i' "702d-oth. How much money did you spend on Food and accommodation including that of person accompanying you?"
 label variable m2_702e`i' "702e. Did you spend money for other services?"
-label variable m2_702e_other`i' "702e-oth. How much money did you spend on other item/service?"
+label variable m2_702e_cost`i' "702e-oth. How much money did you spend on other item/service?"
 label variable m2_703`i' "703. So, in total you spent"
 label variable m2_704`i' "704. Is the total cost correct?"
-label variable m2_704_other`i' "704-oth. So how much in total would you say you spent?"
+label variable m2_704_confirm`i' "704-oth. So how much in total would you say you spent?"
 label variable m2_705_1`i' "705. Which of the following financial sources did your household use to pay for this? Current income of any household members"
 label variable m2_705_2`i' "705. Which of the following financial sources did your household use to pay for this? Savings (e.g., bank account)"
 label variable m2_705_3`i' "705. Which of the following financial sources did your household use to pay for this? Payment or reimbursement from a health insurance plan"
@@ -6317,6 +7600,120 @@ label variable m2_int_duration`i' "103C. Total Duration of interview (In minutes
 label variable m2_endstatus`i' "What is this womens current status at the end of the interview?"	
 
 	}
+	
+*set to missing if the baby is not born alive or baby is born at a weight <25mg
+		gen ga_according_to_dob = 40-((m3_birth_or_ended - m1_date)/7)
+		char ga_according_to_dob[Original_ET_Varname] (`m3_birth_or_ended[Original_ET_Varname]' - `m1_date[Original_ET_Varname]'/7)		
+		recode ga_according_to_dob (. = .a) if m3_baby1_born_alive !=1 & m3_baby2_born_alive !=1 & m3_baby3_born_alive !=1 // need to add if any baby's are under 25
+	
+	
 *===============================================================================
 * STEP SEVEN: SAVE DATA TO RECODED FOLDER
-	 save "$et_data_final/eco_m1-m4_et_wide.dta", replace
+	 save "$et_data_final/eco_m1-m5_et_wide.dta", replace
+	 
+	 *run "/Users/shs8688/Documents/GitHub/eCohorts/Ethiopia/crEco_der_ET.do"
+
+*===============================================================================
+	 
+* STEP EIGHT: RUN DERIVED VARIABLES CODE AND SAVE AS COMPLETED DATASET	 
+* Convert string dates to numeric dates
+
+
+	* convert the string dates to numeric dates
+	foreach v in m1_date m1_802a m1_802c_et mcard_date mcard_edd m2_date_r1 m2_103_r1 m2_date_of_maternal_death_r1 m2_date_of_maternal_death_2_r1 m2_date_of_rescheduled_r1 m2_lastdate_r1 m2_date_r2 m2_103_r2 m2_date_of_maternal_death_r2 m2_date_of_maternal_death_2_r2 m2_date_of_rescheduled_r2 m2_lastdate_r2 m2_date_r3 m2_103_r3 m2_date_of_maternal_death_r3 m2_date_of_maternal_death_2_r3 m2_date_of_rescheduled_r3 m2_lastdate_r3 m2_date_r4 m2_103_r4 m2_date_of_maternal_death_r4 m2_date_of_maternal_death_2_r4 m2_date_of_rescheduled_r4 m2_lastdate_r4 m2_date_r5 m2_103_r5 m2_date_of_maternal_death_r5 m2_date_of_maternal_death_2_r5 m2_date_of_rescheduled_r5 m2_lastdate_r5 m2_date_r6 m2_103_r6 m2_date_of_maternal_death_r6 m2_date_of_maternal_death_2_r6 m2_date_of_rescheduled_r6 m2_lastdate_r6 m2_date_r7 m2_103_r7 m2_date_of_maternal_death_r7 m2_date_of_maternal_death_2_r7 m2_date_of_rescheduled_r7 m2_lastdate_r7 m2_date_r8 m2_103_r8 m2_date_of_maternal_death_r8 m2_date_of_maternal_death_2_r8 m2_date_of_rescheduled_r8 m2_lastdate_r8 m3_date m3_date_p2 m3_birth_or_ended m3_313a_baby1 m3_313a_baby2 m3_p1_date_of_rescheduled m3_p2_date_of_rescheduled m4_102 m4_113 m4_attempt_date m4_baby1_death_date m4_baby2_death_date m4_baby3_death_date m4_date_of_rescheduled m5_baby1_death_date m5_baby2_death_date m5_baby3_death_date m5_date {
+		
+		tab `v',m
+		
+		
+		local format `:format `v''
+		di "`format'"
+		local type = substr("`format'",1,3)
+		
+		if "`type'" != "%td" {
+			
+			local name str_`v'
+			local len = strlen("`name'")
+			if `len' > 32 local name = subinstr("`name'","date_of_maternal_death","maternal_death_date",1)
+			di "`name'"
+			
+			rename `v' `name'
+
+			gen `v' = .
+			char `v'[Original_ET_Varname] ``name'[Original_ET_Varname]'
+			char `v'[Module] ``name'[Module]'
+			label var `v' "`:var label `name''"
+			
+			local type2 =substr("`:type `name''",1,3)
+			
+			if "`type2'" == "str" {
+				replace `name' = "" if `name' == "."
+				replace `v' = date(`name',"YMD") 
+				replace `v' = date(`name',"MDY") if missing(`v')
+				replace `v' = date(`name',"DMY") if missing(`v')
+			}
+			if "`type2'" != "str" replace `v' = `name'
+			
+			if "`type2'" == "str" {
+				count if missing(`v') & !missing(`name')
+				if `r(N)' > 0  di as error "`v' - `r(N)' lines have an invalid date"
+				replace `v' = .a if `name' ==".a"
+				replace `v' = .n if `name' == "888" // No information
+				replace `v' = .d if inlist(`name', "998",".d") // Don't Know
+				replace `v' = .r if inlist(`name',"999",".r") // Refused to answer/No response
+				replace `v' = .i if `v'==. & `name'!="" & !inlist(`name',"888","998","999")	
+				
+			}
+			if "`type2'" != "str" {
+				replace `v' = `name' if inlist(`name',.a,.r,.d)
+				replace `v' = .n if `name' == 888 // No information
+				replace `v' = .d if `name' == 998 // Don't Know
+				replace `v' = .r if `name' == 999 // Refused to answer/No response
+				replace `v' = .i if `v'==. & !missing(`name') & !inlist(`name',888,998,999)		
+			}
+			
+			format %td `v'
+			order `v', before(`name')
+			drop `name'
+			
+			tab `v',m
+
+		}
+	}
+
+	
+	
+	* I noticed some other special missing values that need to be replaced based on the questionnaire
+	foreach v of varlist * {
+		
+		local type =substr("`:type `v''",1,3)
+		
+		if "`type'" == "str" {
+			qui count if inlist(`v',"888","998","999")
+			if `r(N)' > 0 {
+				di "`v' - `r(N)'"
+				qui replace `v' = ".n" if `v' == "888" // No information
+				qui replace `v' = ".d" if `v' == "998" // Don't Know
+				qui replace `v' = ".r" if `v' == "999" // Refused to answer/No response			
+			}
+		}
+		if "`type'" != "str" {
+			qui count if inlist(`v',888,998,999)
+			if `r(N)' > 0 {
+			di "`v' - `r(N)'"
+				qui replace `v' = .n if `v' == 888 // No information
+				qui replace `v' = .d if `v' == 998 // Don't Know
+				qui replace `v' = .r if `v' == 999 // Refused to answer/No response			
+			}
+		}			
+	}
+	
+	* MKT 2024-10-30 Renaming this variable to align with all other datasets
+	rename m1_203_et m1_203
+	
+	save "$et_data_final/eco_m1-m5_et_wide.dta", replace
+	  
+	* Run the derived variables code
+	do "${github}/Ethiopia/crEco_der_ET.do"
+
+	* Save the completed dataset	
+	save "$et_data_final/eco_ET_Complete.dta", replace

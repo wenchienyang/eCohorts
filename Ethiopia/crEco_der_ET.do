@@ -6,8 +6,18 @@
 
 * DERIVED VARIABLES: ETHIOPIA
 
-u "$et_data_final/eco_m1-m4_et_wide.dta", clear
+/*******************************************************************************
+* Change log
+* 				Updated
+*				version
+* Date 			number 	Name			What Changed
+2024-10-02		1.01	MK Trimner		Commented out u "$et_data_final/eco_m1-m5_et_wide.dta", clear
+*										As this program was added to the end of crEco_cln_ET to run 
+*									
+*******************************************************************************/
 
+*u "$et_data_final/eco_m1-m5_et_wide.dta", clear
+				 
 *------------------------------------------------------------------------------*
 * MODULE 1
 *------------------------------------------------------------------------------*
@@ -187,6 +197,11 @@ u "$et_data_final/eco_m1-m4_et_wide.dta", clear
 			predict wealthindex
 			xtile quintile = wealthindex, nq(5)
 			xtile tertile = wealthindex, nq(3)
+			
+			lab def quintile 1"Poorest" 2"Second" 3"Third" 4"Fourth" 5"Richest"
+			lab val quintile quintile
+			lab def tertile 1"Poorest" 2"Second" 3"Richest"
+			lab val tertile tertile 
 			
 			drop safewater-roof 
 			
@@ -439,8 +454,5 @@ u "$et_data_final/eco_m1-m4_et_wide.dta", clear
 	
 	order order m1_phq9_cat-m1_low_BMI, after(m1_trimester)
 	
-save "$et_data_final/eco_m1-m4_et_wide_der.dta", replace
-
-	drop m4_*
-save "$et_data_final/eco_m1-m3_et_wide_der.dta", replace
+save "$et_data_final/eco_m1-m5_et_wide_der.dta", replace
 	
